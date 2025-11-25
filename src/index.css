@@ -159,3 +159,45 @@ h1, h2, h3 {
   border-radius: 12px;
   margin-top: 20px;
 }
+
+/* Print styles: focus on .print-area and hide app chrome */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the printable area */
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+
+  /* Position printable area at the top-left of the page */
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm; /* A4 width */
+    height: 297mm; /* A4 height */
+    padding: 20mm;
+    box-shadow: none;
+    margin: 0;
+    background: white;
+    overflow: visible;
+  }
+
+  /* Make fonts and spacing print-friendly */
+  .print-area h1, .print-area h2, .print-area h3, .print-area h4, .print-area h5 {
+    color: #000;
+  }
+
+  /* Remove shadows and rounded corners for print clarity */
+  .card {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure page breaks are handled */
+  .print-area { page-break-after: always; }
+}
