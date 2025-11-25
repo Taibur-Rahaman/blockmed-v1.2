@@ -160,6 +160,9 @@ const AddPrescription = ({ account }) => {
   setFollowUp('')
   }
 
+  return (
+    <div className="container" style={{ paddingTop: '40px', maxWidth: '800px' }}>
+
       <div className="card">
         <h2>Prescription Details</h2>
 
@@ -276,23 +279,7 @@ const AddPrescription = ({ account }) => {
               {isSubmitting ? '⏳ Submitting to Blockchain...' : '✅ Submit Prescription to Blockchain'}
             </button>
           )}
-        </form>
-
-              IPFS hash of the prescription document
-            </small>
-          </div>
-
-          {!txHash && (
-            <button 
-              type="submit" 
-              className="btn-primary"
-              disabled={isSubmitting}
-              style={{ width: '100%', marginTop: '10px' }}
-            >
-              {isSubmitting ? '⏳ Submitting to Blockchain...' : '✅ Submit Prescription'}
-            </button>
-          )}
-        </form>
+  </form>
 
         {/* Transaction Success */}
         {txHash && (
