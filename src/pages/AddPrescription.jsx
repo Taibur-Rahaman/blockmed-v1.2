@@ -4,6 +4,7 @@ import { ethers } from 'ethers'
 import { QRCodeSVG } from 'qrcode.react'
 import contractABI from '../utils/contractABI.json'
 import { CONTRACT_ADDRESS } from '../utils/config'
+import MedicineSearch from '../components/MedicineSearch'
 
 const AddPrescription = ({ account }) => {
   const navigate = useNavigate()
@@ -12,6 +13,16 @@ const AddPrescription = ({ account }) => {
     patientHash: '',
     ipfsHash: ''
   })
+
+  // New prescription fields
+  const [patientName, setPatientName] = useState('')
+  const [age, setAge] = useState('')
+  const [symptomsField, setSymptomsField] = useState('')
+  const [diagnosisField, setDiagnosisField] = useState('')
+  const [medicines, setMedicines] = useState([])
+  const [testsField, setTestsField] = useState('')
+  const [adviceField, setAdviceField] = useState('')
+  const [followUp, setFollowUp] = useState('')
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [txHash, setTxHash] = useState('')
@@ -29,13 +40,22 @@ const AddPrescription = ({ account }) => {
     setError('')
   }
 
+  const handleAddMedicine = (med) => {
+    // med already includes dose & duration from MedicineSearch
+    setMedicines(prev => [...prev, med])
+  }
+
+  const handleRemoveMedicine = (index) => {
+    setMedicines(prev => prev.filter((_, i) => i !== index))
+  }
+
   const validateForm = () => {
-    if (!formData.patientHash.trim()) {
-      setError('Patient hash cannot be empty')
+    if (!patientName.trim()) {
+      setError('Patient name is required')
       return false
     }
-    if (!formData.ipfsHash.trim()) {
-      setError('IPFS hash cannot be empty')
+    if (!symptomsField.trim()) {
+      setError('Symptoms are required')
       return false
     }
     return true
@@ -125,73 +145,139 @@ const AddPrescription = ({ account }) => {
   }
 
   const handleCreateAnother = () => {
-    setFormData({ patientHash: '', ipfsHash: '' })
+  setFormData({ patientHash: '', ipfsHash: '' })
     setTxHash('')
     setPrescriptionId(null)
     setQrValue('')
     setError('')
+  setPatientName('')
+  setAge('')
+  setSymptomsField('')
+  setDiagnosisField('')
+  setMedicines([])
+  setTestsField('')
+  setAdviceField('')
+  setFollowUp('')
   }
 
-  return (
-    <div className="container" style={{ paddingTop: '40px', maxWidth: '800px' }}>
-      {/* Header */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1>📝 Create New Prescription</h1>
-            <p style={{ color: '#6b7280' }}>Doctor: {account?.substring(0, 10)}...{account?.substring(account.length - 4)}</p>
-          </div>
-          <button className="btn-secondary" onClick={handleBackToDashboard}>
-            ← Back to Dashboard
-          </button>
-        </div>
-      </div>
-
-      {/* Form Card */}
       <div className="card">
         <h2>Prescription Details</h2>
-        
+
         {error && (
           <div className="alert alert-error">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="patientHash">
-              Patient Hash ID <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <input
-              type="text"
-              id="patientHash"
-              name="patientHash"
-              value={formData.patientHash}
-              onChange={handleInputChange}
-              placeholder="e.g., hash123 or patient_0x1234..."
-              disabled={isSubmitting || !!txHash}
-              required
-            />
-            <small style={{ color: '#6b7280', fontSize: '13px' }}>
-              Unique identifier for the patient
-            </small>
+        {/* Patient Info */}
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <label>Patient Name</label>
+              <input placeholder="Patient Name" value={patientName} onChange={(e)=>setPatientName(e.target.value)} />
+            </div>
+            <div>
+              <label>Age</label>
+              <input placeholder="Age or DOB" value={age} onChange={(e)=>setAge(e.target.value)} />
+            </div>
           </div>
 
+          {/* Symptoms & Diagnosis */}
+          <div>
+            <label>Symptoms</label>
+            <textarea placeholder="Symptoms" value={symptomsField} onChange={(e)=>setSymptomsField(e.target.value)} />
+          </div>
+          <div>
+            <label>Diagnosis</label>
+            <textarea placeholder="Diagnosis" value={diagnosisField} onChange={(e)=>setDiagnosisField(e.target.value)} />
+          </div>
+
+          {/* Medicine Search & Add */}
+          <div>
+            <label>Search medicine (BD)</label>
+            <MedicineSearch onAdd={handleAddMedicine} />
+          </div>
+
+          <div>
+            <h4>Added Medicines</h4>
+            {medicines.length === 0 && <p style={{ color: '#6b7280' }}>No medicines added.</p>}
+            <ul>
+              {medicines.map((m, i) => (
+                <li key={i} style={{ marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong>{m.name}</strong> — {m.dose} — {m.duration}
+                      <div style={{ color: '#6b7280', fontSize: 13 }}>{m.generic ? `Generic: ${m.generic}` : ''}</div>
+                    </div>
+                    <div>
+                      <button className="btn-secondary" onClick={()=>handleRemoveMedicine(i)}>Remove</button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Tests & Advice & Follow-up */}
+          <div>
+            <label>Recommended Tests</label>
+            <input placeholder="e.g., CBC, LFT" value={testsField} onChange={(e)=>setTestsField(e.target.value)} />
+          </div>
+          <div>
+            <label>Advice / Precaution</label>
+            <textarea placeholder="Doctor advice" value={adviceField} onChange={(e)=>setAdviceField(e.target.value)} />
+          </div>
+          <div>
+            <label>Follow-up (mm/dd/yyyy)</label>
+            <input type="date" value={followUp} onChange={(e)=>setFollowUp(e.target.value)} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+            <button className="btn-primary" onClick={async (e)=>{
+              // Generate QR / JSON summary
+              if(!patientName.trim()) { setError('Patient name is required'); return }
+              const summary = {
+                patientName, age, symptoms: symptomsField, diagnosis: diagnosisField,
+                medicines, tests: testsField, advice: adviceField, followUp, createdAt: new Date().toISOString()
+              }
+              // populate patientHash and ipfsHash placeholders (IPFS not integrated here)
+              try{
+                const ph = typeof btoa !== 'undefined' ? btoa(`${patientName}|${age}|${Date.now()}`) : `${patientName}-${Date.now()}`
+                setFormData(prev=>({ ...prev, patientHash: ph, ipfsHash: JSON.stringify(summary) }))
+              }catch(e){
+                setFormData(prev=>({ ...prev, patientHash: `${patientName}-${Date.now()}`, ipfsHash: JSON.stringify(summary) }))
+              }
+              const qr = JSON.stringify(summary)
+              setQrValue(qr)
+              alert('Prescription generated — you can now submit to blockchain or download the QR')
+            }}>Generate Prescription</button>
+
+            <button className="btn-secondary" onClick={()=>{
+              // clear generated but keep patient fields
+              setQrValue('')
+              setFormData(prev=>({ ...prev, patientHash: '', ipfsHash: '' }))
+            }}>Clear Generated</button>
+          </div>
+        </div>
+
+        {/* Blockchain submission form (optional) */}
+        <form onSubmit={handleSubmit} style={{ marginTop: 14 }}>
           <div className="form-group">
-            <label htmlFor="ipfsHash">
-              IPFS Hash <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <input
-              type="text"
-              id="ipfsHash"
-              name="ipfsHash"
-              value={formData.ipfsHash}
-              onChange={handleInputChange}
-              placeholder="e.g., QmXyz123... or ipfs://QmAbc..."
-              disabled={isSubmitting || !!txHash}
-              required
-            />
-            <small style={{ color: '#6b7280', fontSize: '13px' }}>
+            <label htmlFor="patientHash">Patient Hash ID</label>
+            <input type="text" id="patientHash" name="patientHash" value={formData.patientHash} onChange={handleInputChange} placeholder="auto-filled after generate or enter manually" />
+          </div>
+          <div className="form-group">
+            <label htmlFor="ipfsHash">IPFS Hash / Data</label>
+            <input type="text" id="ipfsHash" name="ipfsHash" value={formData.ipfsHash} onChange={handleInputChange} placeholder="auto-filled after generate or enter IPFS hash" />
+          </div>
+
+          {!txHash && (
+            <button type="submit" className="btn-primary" disabled={isSubmitting} style={{ width: '100%', marginTop: '10px' }}>
+              {isSubmitting ? '⏳ Submitting to Blockchain...' : '✅ Submit Prescription to Blockchain'}
+            </button>
+          )}
+        </form>
+
               IPFS hash of the prescription document
             </small>
           </div>
