@@ -15,17 +15,62 @@ export default function MedicineSearch({ onAdd }){
       return
     }
     const q = query.toLowerCase()
-    let medicinesList = staticMedicines
-    try{
-      const raw = localStorage.getItem('medicines')
-      if(raw) {
-        const parsed = JSON.parse(raw)
-        if(Array.isArray(parsed)) medicinesList = parsed
+    const fetchFromAPI = async () => {
+      // Try openFDA drug label search as an example public API
+      // We use a small timeout and fallback to local list on failure
+      try{
+        const controller = new AbortController()
+        const timeout = setTimeout(()=>controller.abort(), 2500)
+        const url = `https://api.fda.gov/drug/label.json?search=generic_name:"${encodeURIComponent(q)}"&limit=10`
+        const res = await fetch(url, { signal: controller.signal })
+        clearTimeout(timeout)
+        if(!res.ok) throw new Error('API error')
+        const data = await res.json()
+        if(data.results && Array.isArray(data.results)){
+          const mapped = data.results.map(r => ({
+            name: (r.openfda && r.openfda.brand_name && r.openfda.brand_name[0]) || (r.openfda && r.openfda.generic_name && r.openfda.generic_name[0]) || r.brand_name || 'Unknown',
+            generic: (r.openfda && r.openfda.generic_name && r.openfda.generic_name[0]) || '',
+            brand: (r.openfda && r.openfda.brand_name && r.openfda.brand_name[0]) || '',
+            form: (r.openfda && r.openfda.dosage_form && r.openfda.dosage_form[0]) || '',
+            strength: (r.openfda && r.openfda.dosage_strength && r.openfda.dosage_strength[0]) || ''
+          }))
+          setResults(mapped)
+          return
+        }
+      }catch(err){
+        // ignore and fallback
       }
-    }catch(e){ /* ignore and use static list */ }
 
-    const filtered = medicinesList.filter(m => (m.name + ' ' + (m.generic||'') + ' ' + (m.brand||'')).toLowerCase().includes(q)).slice(0,10)
-    setResults(filtered)
+      // fallback to local list
+      let medicinesList = staticMedicines
+      try{
+        const raw = localStorage.getItem('medicines')
+        if(raw) {
+          const parsed = JSON.parse(raw)
+          if(Array.isArray(parsed)) medicinesList = parsed
+        }
+      }catch(e){ /* ignore and use static list */ }
+
+      const filtered = medicinesList.filter(m => (m.name + ' ' + (m.generic||'') + ' ' + (m.brand||'')).toLowerCase().includes(q)).slice(0,10)
+      setResults(filtered)
+    }
+
+    // Only try API for longer queries to avoid quota/noise
+    if(query.length >= 3){
+      fetchFromAPI()
+    } else {
+      // quick local match
+      let medicinesList = staticMedicines
+      try{
+        const raw = localStorage.getItem('medicines')
+        if(raw) {
+          const parsed = JSON.parse(raw)
+          if(Array.isArray(parsed)) medicinesList = parsed
+        }
+      }catch(e){ }
+      const filtered = medicinesList.filter(m => (m.name + ' ' + (m.generic||'') + ' ' + (m.brand||'')).toLowerCase().includes(q)).slice(0,10)
+      setResults(filtered)
+    }
   }, [query])
 
   const handleSelect = (m)=>{

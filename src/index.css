@@ -1,203 +1,571 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   BlockMed V2 - Modern Healthcare UI
+   ============================================ */
+
+:root {
+  --gradient-primary: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+  --gradient-accent: linear-gradient(135deg, #d946ef 0%, #a21caf 100%);
+  --gradient-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  --shadow-glow: 0 0 40px rgba(34, 197, 94, 0.15);
+  --shadow-neon: 0 0 20px rgba(34, 197, 94, 0.4);
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Outfit', system-ui, sans-serif;
+  background: linear-gradient(180deg, #0a0f1a 0%, #0f172a 50%, #1a1f2e 100%);
+  color: #e2e8f0;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-#root {
-  min-height: 100vh;
+body.bn {
+  font-family: 'Noto Sans Bengali', 'Outfit', sans-serif;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  margin: 20px 0;
-}
-
-button {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-success {
-  background: #10b981;
-  color: white;
-}
-
-.btn-secondary {
-  background: #6b7280;
-  color: white;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s ease;
-}
-
-input:focus, textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
-}
-
-h1, h2, h3 {
-  color: #1f2937;
-  margin-bottom: 16px;
-}
-
-.alert {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.alert-success {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #10b981;
-}
-
-.alert-error {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #ef4444;
-}
-
-.alert-info {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #3b82f6;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.mt-20 {
-  margin-top: 20px;
-}
-
-.mb-20 {
-  margin-bottom: 20px;
-}
-
-.flex {
-  display: flex;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.gap-10 {
-  gap: 10px;
-}
-
-.qr-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background: #f9fafb;
-  border-radius: 12px;
-  margin-top: 20px;
-}
-
-/* Print styles: focus on .print-area and hide app chrome */
-@media print {
-  /* Hide everything by default */
-  body * {
-    visibility: hidden;
+/* ============================================
+   Glass Morphism Effects
+   ============================================ */
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-glass;
   }
 
-  /* Show only the printable area */
-  .print-area, .print-area * {
-    visibility: visible;
+  .glass-dark {
+    @apply bg-dark-900/60 backdrop-blur-xl border border-white/5;
   }
 
-  /* Position printable area at the top-left of the page */
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 210mm; /* A4 width */
-    height: 297mm; /* A4 height */
-    padding: 20mm;
-    box-shadow: none;
-    margin: 0;
-    background: white;
-    overflow: visible;
+  .glass-card {
+    @apply bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl 
+           border border-white/10 rounded-2xl shadow-glass 
+           hover:border-primary-500/30 transition-all duration-300;
   }
 
-  /* Make fonts and spacing print-friendly */
-  .print-area h1, .print-area h2, .print-area h3, .print-area h4, .print-area h5 {
-    color: #000;
+  .glass-input {
+    @apply bg-white/5 backdrop-blur-md border-2 border-white/10 rounded-xl
+           px-4 py-3 text-white placeholder-gray-400
+           focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20
+           transition-all duration-300;
   }
 
-  /* Remove shadows and rounded corners for print clarity */
+  .glass-select {
+    @apply bg-white/5 backdrop-blur-md border-2 border-white/10 rounded-xl
+           px-4 py-3 text-white appearance-none cursor-pointer
+           focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20
+           transition-all duration-300;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.2rem;
+  }
+
+  /* ============================================
+     Button Styles
+     ============================================ */
+  .btn {
+    @apply relative inline-flex items-center justify-center gap-2 px-6 py-3
+           font-semibold rounded-xl transition-all duration-300 
+           disabled:opacity-50 disabled:cursor-not-allowed
+           overflow-hidden;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-primary-500 to-primary-600 text-white
+           hover:from-primary-400 hover:to-primary-500 
+           hover:shadow-neon hover:-translate-y-0.5
+           active:translate-y-0;
+  }
+
+  .btn-primary::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-white/20 to-transparent 
+           opacity-0 hover:opacity-100 transition-opacity duration-300;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white/10 text-white border border-white/20
+           hover:bg-white/20 hover:border-white/30
+           hover:-translate-y-0.5;
+  }
+
+  .btn-accent {
+    @apply btn bg-gradient-to-r from-accent-500 to-accent-600 text-white
+           hover:from-accent-400 hover:to-accent-500
+           hover:shadow-neon-purple hover:-translate-y-0.5;
+  }
+
+  .btn-danger {
+    @apply btn bg-gradient-to-r from-red-500 to-red-600 text-white
+           hover:from-red-400 hover:to-red-500
+           hover:-translate-y-0.5;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-300 hover:text-white hover:bg-white/10;
+  }
+
+  .btn-icon {
+    @apply p-3 rounded-xl bg-white/5 border border-white/10
+           hover:bg-white/10 hover:border-primary-500/30
+           transition-all duration-300;
+  }
+
+  /* ============================================
+     Card Styles
+     ============================================ */
   .card {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
+    @apply glass-card p-6;
   }
 
-  /* Ensure page breaks are handled */
-  .print-area { page-break-after: always; }
+  .card-hover {
+    @apply card hover:scale-[1.02] hover:shadow-2xl;
+  }
+
+  .card-stat {
+    @apply glass-card p-5 flex flex-col gap-2;
+  }
+
+  .card-feature {
+    @apply glass-card p-6 cursor-pointer
+           hover:bg-gradient-to-br hover:from-primary-500/10 hover:to-transparent;
+  }
+
+  /* ============================================
+     Form Elements
+     ============================================ */
+  .form-group {
+    @apply flex flex-col gap-2;
+  }
+
+  .form-label {
+    @apply text-sm font-medium text-gray-300 flex items-center gap-2;
+  }
+
+  .form-input {
+    @apply glass-input w-full;
+  }
+
+  .form-textarea {
+    @apply glass-input w-full min-h-[100px] resize-y;
+  }
+
+  .form-select {
+    @apply glass-select w-full;
+  }
+
+  /* Date Picker Override */
+  .react-datepicker-wrapper {
+    @apply w-full;
+  }
+
+  .react-datepicker__input-container input {
+    @apply glass-input w-full cursor-pointer;
+  }
+
+  .react-datepicker-popper {
+    @apply !z-50;
+  }
+
+  .react-datepicker {
+    @apply !bg-dark-800 !border-white/10 !rounded-xl !font-sans !shadow-2xl;
+  }
+
+  .react-datepicker__header {
+    @apply !bg-dark-900 !border-white/10 !rounded-t-xl;
+  }
+
+  .react-datepicker__current-month,
+  .react-datepicker__day-name,
+  .react-datepicker__day {
+    @apply !text-white;
+  }
+
+  .react-datepicker__day:hover {
+    @apply !bg-primary-500 !rounded-lg;
+  }
+
+  .react-datepicker__day--selected {
+    @apply !bg-primary-500 !rounded-lg;
+  }
+
+  .react-datepicker__day--disabled {
+    @apply !text-gray-600;
+  }
+
+  .react-datepicker__navigation-icon::before {
+    @apply !border-white;
+  }
+
+  .react-datepicker__month-dropdown,
+  .react-datepicker__year-dropdown {
+    @apply !bg-dark-800 !border-white/10 !text-white;
+  }
+
+  .react-datepicker__month-option,
+  .react-datepicker__year-option {
+    @apply !text-white hover:!bg-primary-500;
+  }
+
+  .react-datepicker__month-option--selected_month,
+  .react-datepicker__year-option--selected_year {
+    @apply !bg-primary-500;
+  }
+
+  .react-datepicker__month-read-view--down-arrow,
+  .react-datepicker__year-read-view--down-arrow {
+    @apply !border-white;
+  }
+
+  /* ============================================
+     Alert & Badge Styles
+     ============================================ */
+  .alert {
+    @apply p-4 rounded-xl flex items-start gap-3 text-sm;
+  }
+
+  .alert-success {
+    @apply alert bg-primary-500/20 border border-primary-500/30 text-primary-300;
+  }
+
+  .alert-error {
+    @apply alert bg-red-500/20 border border-red-500/30 text-red-300;
+  }
+
+  .alert-warning {
+    @apply alert bg-yellow-500/20 border border-yellow-500/30 text-yellow-300;
+  }
+
+  .alert-info {
+    @apply alert bg-blue-500/20 border border-blue-500/30 text-blue-300;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-success {
+    @apply badge bg-primary-500/20 text-primary-400 border border-primary-500/30;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+
+  .badge-info {
+    @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+
+  .badge-purple {
+    @apply badge bg-accent-500/20 text-accent-400 border border-accent-500/30;
+  }
+
+  /* ============================================
+     Navigation & Sidebar
+     ============================================ */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400
+           hover:text-white hover:bg-white/10 transition-all duration-200
+           cursor-pointer;
+  }
+
+  .nav-item.active {
+    @apply bg-primary-500/20 text-primary-400 border-l-4 border-primary-500;
+  }
+
+  /* ============================================
+     Table Styles
+     ============================================ */
+  .table-container {
+    @apply overflow-x-auto rounded-xl border border-white/10;
+  }
+
+  .table {
+    @apply w-full text-sm;
+  }
+
+  .table th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider
+           bg-white/5 border-b border-white/10;
+  }
+
+  .table td {
+    @apply px-4 py-3 border-b border-white/5;
+  }
+
+  .table tr:hover td {
+    @apply bg-white/5;
+  }
+
+  /* ============================================
+     Animated Background
+     ============================================ */
+  .bg-animated {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+
+  .bg-animated::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(217, 70, 239, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  .bg-grid {
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* ============================================
+     Scrollbar Styles
+     ============================================ */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/20 rounded-full hover:bg-white/30;
+  }
+
+  /* ============================================
+     Loading & Skeleton
+     ============================================ */
+  .skeleton {
+    @apply bg-gradient-to-r from-white/5 via-white/10 to-white/5 
+           bg-[length:200%_100%] animate-shimmer rounded-lg;
+  }
+
+  .loader {
+    @apply w-8 h-8 border-4 border-primary-500/30 border-t-primary-500 
+           rounded-full animate-spin;
+  }
+
+  /* ============================================
+     QR Code Styles
+     ============================================ */
+  .qr-container {
+    @apply p-4 bg-white rounded-2xl inline-block shadow-lg;
+  }
+
+  /* ============================================
+     Role-Based Colors
+     ============================================ */
+  .role-admin { @apply text-red-400 bg-red-500/20; }
+  .role-doctor { @apply text-primary-400 bg-primary-500/20; }
+  .role-pharmacist { @apply text-blue-400 bg-blue-500/20; }
+  .role-manufacturer { @apply text-yellow-400 bg-yellow-500/20; }
+  .role-patient { @apply text-purple-400 bg-purple-500/20; }
+  .role-regulator { @apply text-orange-400 bg-orange-500/20; }
+
+  /* ============================================
+     Print Styles
+     ============================================ */
+  @media print {
+    /* Reset everything */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    html, body {
+      background: white !important;
+      color: black !important;
+      font-size: 12pt !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Hide non-essential elements */
+    aside,
+    header,
+    nav,
+    .no-print,
+    .btn,
+    .btn-primary,
+    .btn-secondary,
+    .btn-icon,
+    .glass-card:not(.print-area),
+    .card:not(.print-area),
+    .bg-animated,
+    .bg-grid,
+    [class*="sidebar"],
+    [class*="nav-"],
+    .alert,
+    .form-group,
+    .form-input,
+    .form-select,
+    .form-textarea,
+    button,
+    input,
+    select,
+    textarea {
+      display: none !important;
+    }
+
+    /* Show only print area */
+    .print-area {
+      display: block !important;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 20px !important;
+      background: white !important;
+      color: black !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+
+    .print-area * {
+      color: black !important;
+      background: white !important;
+    }
+
+    .print-area h1, 
+    .print-area h2, 
+    .print-area h3, 
+    .print-area h4, 
+    .print-area h5, 
+    .print-area p, 
+    .print-area span, 
+    .print-area div {
+      color: black !important;
+    }
+
+    .print-area .text-gray-400,
+    .print-area .text-gray-300 {
+      color: #666 !important;
+    }
+
+    .print-area .text-primary-400 {
+      color: #16a34a !important;
+    }
+
+    /* QR Code styling for print */
+    .print-area .qr-container,
+    .print-area svg {
+      display: block !important;
+    }
+
+    /* Prescription details styling */
+    .print-area .rounded-xl {
+      border: 1px solid #ddd !important;
+      border-radius: 8px !important;
+      padding: 12px !important;
+      margin-bottom: 12px !important;
+      background: #f9f9f9 !important;
+    }
+
+    /* Hide backdrop and overlays */
+    .backdrop-blur-xl,
+    [class*="backdrop"],
+    [class*="glass"] {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    /* Page settings */
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+  }
+
+  .print-only {
+    display: none;
+  }
+
+  /* ============================================
+     Transitions & Animations
+     ============================================ */
+  .fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ============================================
+     Tooltip
+     ============================================ */
+  .tooltip {
+    @apply relative;
+  }
+
+  .tooltip::after {
+    content: attr(data-tooltip);
+    @apply absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+           px-3 py-1.5 text-xs text-white bg-dark-800 rounded-lg
+           opacity-0 invisible transition-all duration-200
+           whitespace-nowrap border border-white/10;
+  }
+
+  .tooltip:hover::after {
+    @apply opacity-100 visible;
+  }
+}
+
+/* ============================================
+   Toast Overrides for react-hot-toast
+   ============================================ */
+.custom-toast {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-radius: 12px !important;
 }

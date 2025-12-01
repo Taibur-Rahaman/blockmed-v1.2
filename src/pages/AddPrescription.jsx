@@ -67,7 +67,10 @@ const AddPrescription = ({ account }) => {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
-      const tx = await contract.addPrescription(formData.patientHash, formData.ipfsHash)
+      const tx = await contract.addPrescription(formData.patientHash, formData.ipfsHash, {
+        gasPrice: 1,  // Set to 1 wei (minimal cost for real blockchain demo)
+        gasLimit: 300000  // Set reasonable gas limit
+      })
       setTxHash(tx.hash)
       const receipt = await tx.wait()
       const currentCount = await contract.prescriptionCount()
@@ -76,7 +79,7 @@ const AddPrescription = ({ account }) => {
       const qrData = JSON.stringify({ prescriptionId: idString, patientHash: formData.patientHash, ipfsHash: formData.ipfsHash })
       setQrValue(qrData)
       setError('')
-      alert('✅ Transaction Successful!')
+      alert('✅ Prescription Submitted to Blockchain!\n\n🔗 Transaction Hash: ' + tx.hash.substring(0, 10) + '...')
     } catch (err) {
       console.error(err)
       setError(err.message || 'Failed to submit')
@@ -109,8 +112,30 @@ const AddPrescription = ({ account }) => {
         <h2>1. Patient Information</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <input placeholder="Name" value={patient.name} onChange={(e)=>setPatient({...patient, name: e.target.value})} />
-          <input placeholder="Age or DOB" value={patient.age} onChange={(e)=>setPatient({...patient, age: e.target.value})} />
-          <input placeholder="Gender (optional)" value={patient.gender} onChange={(e)=>setPatient({...patient, gender: e.target.value})} />
+          <div>
+            <label style={{ fontSize: 12, color: '#6b7280' }}>Date of Birth</label>
+            <input type="date" value={patient.dob || ''} onChange={(e)=>{
+              const dob = e.target.value
+              // compute age
+              let age = ''
+              if(dob){
+                const diff = Date.now() - new Date(dob).getTime()
+                age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))
+              }
+              setPatient(prev=>({...prev, dob, age: age.toString()}))
+            }} />
+            <div style={{ fontSize: 13, color: '#374151', marginTop: 6 }}>{patient.age ? `Age: ${patient.age}` : ''}</div>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#6b7280' }}>Gender</label>
+            <select value={patient.gender || ''} onChange={(e)=>setPatient({...patient, gender: e.target.value})} style={{ width: '100%', padding: 12, borderRadius: 8, border: '2px solid #e5e7eb' }}>
+              <option value="">Select gender (optional)</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+              <option value="prefer_not_say">Prefer not to say</option>
+            </select>
+          </div>
         </div>
 
         <h2 style={{ marginTop: 18 }}>2. Symptoms & Diagnosis</h2>
@@ -200,8 +225,9 @@ const AddPrescription = ({ account }) => {
 
       {/* Blockchain submission - visually separated */}
       <div className="card" style={{ marginTop: 14 }}>
-        <h3>Optional: Submit to Blockchain</h3>
-        <p style={{ color: '#6b7280' }}>Only submit if you want the prescription recorded on-chain. This step is optional.</p>
+        <h3>🔗 Submit to Real Blockchain</h3>
+        <p style={{ color: '#059669', fontWeight: '600' }}>✅ Real Blockchain Demo - Shows actual transaction on-chain!</p>
+        <p style={{ color: '#6b7280' }}>For university projects: Demonstrates genuine blockchain functionality with minimal gas fees.</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="patientHash">Patient Hash ID</label>

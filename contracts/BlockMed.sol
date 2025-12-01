@@ -66,7 +66,12 @@ contract BlockMed {
     /**
      * @dev Get prescription details by ID
      * @param _id The prescription ID to retrieve
-     * @return Prescription struct containing all details
+     * @return id The prescription ID
+     * @return patientHash Hash identifier for the patient
+     * @return ipfsHash IPFS hash of the prescription document
+     * @return doctor Address of the prescribing doctor
+     * @return timestamp Block timestamp when prescription was created
+     * @return verified Whether the prescription has been verified
      */
     function getPrescription(uint256 _id) public view returns (
         uint256 id,
