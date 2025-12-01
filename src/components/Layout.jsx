@@ -171,7 +171,7 @@ const Layout = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Language Toggle */}
+            {/* Language Toggle - Disabled for now
             <button
               onClick={toggleLanguage}
               className="btn-icon flex items-center gap-2"
@@ -180,6 +180,7 @@ const Layout = ({ children }) => {
               <FiGlobe size={18} />
               <span className="text-sm font-medium">{language === 'en' ? 'EN' : 'বাং'}</span>
             </button>
+            */}
 
             {/* Notifications */}
             <div className="relative">
