@@ -1,24 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { ethers } from 'ethers'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import toast from 'react-hot-toast'
 import {
   FiSearch, FiCheckCircle, FiXCircle, FiAlertTriangle,
-  FiCamera, FiPackage, FiClock, FiUser, FiHash
+  FiCamera, FiPackage, FiClock, FiUser, FiHash, FiList, FiArrowRight, FiShield
 } from 'react-icons/fi'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useStore } from '../store/useStore'
-import { CONTRACT_ADDRESS } from '../utils/config'
-import contractABI from '../utils/contractABI.json'
 import { 
   formatTimestamp, shortenAddress, isExpired, daysUntilExpiry,
-  getPrescriptionStatus, getBatchStatus
+  getPrescriptionStatus, getBatchStatus, generatePatientHash
 } from '../utils/helpers'
+import { getReadContract, getWriteContract } from '../utils/contractHelper'
+import { isDevMode } from '../utils/devMode'
 
 const PharmacyVerification = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { account, language } = useStore()
   
   const [activeTab, setActiveTab] = useState('prescription')
@@ -29,6 +31,18 @@ const PharmacyVerification = () => {
   const [loading, setLoading] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const scannerRef = useRef(null)
+  const [patientHistory, setPatientHistory] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [prescriptionData, setPrescriptionData] = useState(null) // Parsed prescription data from ipfsHash
+
+  // Read prescriptionId from URL query parameter on mount
+  useEffect(() => {
+    const urlPrescriptionId = searchParams.get('prescriptionId')
+    if (urlPrescriptionId && urlPrescriptionId !== prescriptionId) {
+      setPrescriptionId(urlPrescriptionId)
+      setActiveTab('prescription')
+    }
+  }, [searchParams])
 
   // Initialize QR Scanner
   useEffect(() => {
@@ -71,20 +85,61 @@ const PharmacyVerification = () => {
     }
   }, [showScanner])
 
+  // Load patient history by patientHash
+  const loadPatientHistory = async (patientHash) => {
+    if (!patientHash) return
+    
+    try {
+      const contract = await getReadContract()
+      const prescriptionIds = await contract.getPrescriptionsByPatient(patientHash)
+      
+      if (prescriptionIds.length === 0) {
+        setPatientHistory([])
+        return
+      }
+
+      // Load all prescription details
+      const history = []
+      for (const id of prescriptionIds) {
+        try {
+          const p = await contract.getPrescription(Number(id))
+          history.push({
+            id: Number(p.id),
+            patientHash: p.patientHash,
+            createdAt: Number(p.createdAt),
+            expiresAt: Number(p.expiresAt),
+            isDispensed: p.isDispensed,
+            doctor: p.doctor,
+          })
+        } catch (error) {
+          console.error(`Error loading prescription ${id}:`, error)
+        }
+      }
+
+      // Sort by creation date (newest first)
+      history.sort((a, b) => b.createdAt - a.createdAt)
+      setPatientHistory(history)
+    } catch (error) {
+      console.error('Error loading patient history:', error)
+      setPatientHistory([])
+    }
+  }
+
   // Load prescription
   const loadPrescription = async () => {
-    if (!prescriptionId || !window.ethereum) return
+    if (!prescriptionId) return
+    if (!isDevMode() && !window.ethereum) return
 
     setLoading(true)
     setPrescription(null)
+    setPrescriptionData(null)
+    setPatientHistory([])
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
-
+      const contract = await getReadContract()
       const result = await contract.getPrescription(Number(prescriptionId))
       
-      setPrescription({
+      const prescriptionData = {
         id: Number(result.id),
         patientHash: result.patientHash,
         ipfsHash: result.ipfsHash,
@@ -96,7 +151,25 @@ const PharmacyVerification = () => {
         dispensedAt: Number(result.dispensedAt),
         version: Number(result.version),
         isActive: result.isActive,
-      })
+      }
+      
+      setPrescription(prescriptionData)
+      
+      // Parse prescription data from ipfsHash (contains medicines, patient info, etc.)
+      try {
+        const parsedData = JSON.parse(result.ipfsHash)
+        setPrescriptionData(parsedData)
+        console.log('✅ Prescription data parsed:', parsedData)
+      } catch (error) {
+        console.error('Error parsing prescription data:', error)
+        // If parsing fails, try to extract medicines from the string
+        setPrescriptionData(null)
+      }
+      
+      // Load patient history if we have patientHash
+      if (result.patientHash) {
+        await loadPatientHistory(result.patientHash)
+      }
     } catch (error) {
       console.error('Error loading prescription:', error)
       toast.error('Prescription not found')
@@ -105,6 +178,15 @@ const PharmacyVerification = () => {
     }
   }
 
+  // Auto-load prescription when prescriptionId is set from URL
+  useEffect(() => {
+    const urlPrescriptionId = searchParams.get('prescriptionId')
+    if (urlPrescriptionId && urlPrescriptionId === prescriptionId && !prescription && !loading && prescriptionId) {
+      loadPrescription()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prescriptionId])
+
   // Verify and dispense prescription
   const handleDispense = async () => {
     if (!prescription) return
@@ -112,10 +194,7 @@ const PharmacyVerification = () => {
     setLoading(true)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
-
+      const contract = await getWriteContract()
       const tx = await contract.dispensePrescription(prescription.id)
       toast.loading('Processing transaction...')
       await tx.wait()
@@ -135,15 +214,14 @@ const PharmacyVerification = () => {
 
   // Load batch
   const loadBatch = async () => {
-    if (!batchNumber || !window.ethereum) return
+    if (!batchNumber) return
+    if (!isDevMode() && !window.ethereum) return
 
     setLoading(true)
     setBatch(null)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
-
+      const contract = await getReadContract()
       const result = await contract.verifyBatch(batchNumber)
       
       if (result.exists) {
@@ -187,10 +265,7 @@ const PharmacyVerification = () => {
     setLoading(true)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
-
+      const contract = await getWriteContract()
       const tx = await contract.flagBatch(batch.id, reason)
       toast.loading('Flagging batch...')
       await tx.wait()
@@ -377,6 +452,190 @@ const PharmacyVerification = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Prescription Medicines - From Blockchain (Tamper-Proof) */}
+              {prescriptionData && prescriptionData.medicines && prescriptionData.medicines.length > 0 && (
+                <div className="p-6 rounded-xl bg-white/5 border-2 border-primary-500/50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FiPackage className="text-primary-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">
+                      Prescribed Medicines (Blockchain Verified)
+                    </h3>
+                    <span className="ml-auto px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium flex items-center gap-1">
+                      <FiCheckCircle size={12} />
+                      Blockchain Verified
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 mb-4">
+                    <p className="text-sm text-green-300 flex items-center gap-2">
+                      <FiShield size={16} />
+                      <strong>Security:</strong> These medicines are stored on the blockchain and <strong>cannot be edited</strong> by patients. 
+                      The data is cryptographically secured and any tampering would be immediately detected.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {prescriptionData.medicines.map((medicine, index) => (
+                      <div
+                        key={index}
+                        className="p-4 rounded-lg bg-white/5 border border-white/10"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-primary-400 font-semibold">
+                                {index + 1}.
+                              </span>
+                              <h4 className="text-white font-semibold">
+                                {medicine.name || medicine.medicineName || 'Unknown Medicine'}
+                              </h4>
+                              {medicine.strength && (
+                                <span className="text-gray-400 text-sm">
+                                  ({medicine.strength})
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid md:grid-cols-3 gap-2 text-sm">
+                              {medicine.dose && (
+                                <div>
+                                  <span className="text-gray-400">Dose: </span>
+                                  <span className="text-white">{medicine.dose}</span>
+                                </div>
+                              )}
+                              {medicine.duration && (
+                                <div>
+                                  <span className="text-gray-400">Duration: </span>
+                                  <span className="text-white">{medicine.duration}</span>
+                                </div>
+                              )}
+                              {medicine.quantity && (
+                                <div>
+                                  <span className="text-gray-400">Quantity: </span>
+                                  <span className="text-white">{medicine.quantity}</span>
+                                </div>
+                              )}
+                            </div>
+                            {medicine.instructions && (
+                              <div className="mt-2">
+                                <span className="text-gray-400 text-sm">Instructions: </span>
+                                <span className="text-white text-sm">{medicine.instructions}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Prescription Details from Blockchain */}
+              {prescriptionData && (
+                <div className="p-6 rounded-xl bg-white/5 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <FiUser className="text-primary-400" />
+                    Patient Information (From Blockchain)
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {prescriptionData.patient && (
+                      <>
+                        {prescriptionData.patient.name && (
+                          <div>
+                            <p className="text-sm text-gray-400">Patient Name</p>
+                            <p className="text-white font-medium">{prescriptionData.patient.name}</p>
+                          </div>
+                        )}
+                        {prescriptionData.patient.nid && (
+                          <div>
+                            <p className="text-sm text-gray-400">NID</p>
+                            <p className="text-white font-mono text-sm">{prescriptionData.patient.nid}</p>
+                          </div>
+                        )}
+                        {prescriptionData.patient.age && (
+                          <div>
+                            <p className="text-sm text-gray-400">Age</p>
+                            <p className="text-white">{prescriptionData.patient.age} years</p>
+                          </div>
+                        )}
+                        {prescriptionData.patient.gender && (
+                          <div>
+                            <p className="text-sm text-gray-400">Gender</p>
+                            <p className="text-white">{prescriptionData.patient.gender}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {prescriptionData.diagnosis && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-400 mb-1">Diagnosis</p>
+                      <p className="text-white">{prescriptionData.diagnosis}</p>
+                    </div>
+                  )}
+                  {prescriptionData.symptoms && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-400 mb-1">Symptoms</p>
+                      <p className="text-white">{prescriptionData.symptoms}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Patient History Section */}
+              {patientHistory.length > 1 && (
+                <div className="p-4 rounded-xl bg-white/5 border border-primary-500/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-white flex items-center gap-2">
+                      <FiList className="text-primary-400" />
+                      Patient History ({patientHistory.length} prescriptions)
+                    </h3>
+                    <button
+                      onClick={() => navigate('/patient-history')}
+                      className="btn-ghost text-sm"
+                    >
+                      View All <FiArrowRight size={14} className="inline ml-1" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {patientHistory.slice(0, 3).map((hist) => (
+                      <div
+                        key={hist.id}
+                        className={`p-3 rounded-lg flex items-center justify-between ${
+                          hist.id === prescription.id
+                            ? 'bg-primary-500/20 border border-primary-500/50'
+                            : 'bg-white/5'
+                        }`}
+                      >
+                        <div>
+                          <p className="text-white font-medium">
+                            Prescription #{hist.id}
+                            {hist.id === prescription.id && (
+                              <span className="ml-2 text-xs text-primary-400">(Current)</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {formatTimestamp(hist.createdAt)}
+                            {hist.isDispensed && ' • Dispensed'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setPrescriptionId(hist.id.toString())
+                            loadPrescription()
+                          }}
+                          className="btn-ghost text-xs"
+                        >
+                          View
+                        </button>
+                      </div>
+                    ))}
+                    {patientHistory.length > 3 && (
+                      <p className="text-xs text-gray-400 text-center pt-2">
+                        + {patientHistory.length - 3} more prescriptions
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Action Button */}
               {!prescription.isDispensed && !isExpired(prescription.expiresAt) && (

@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockMed - Blockchain Presentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(15, 15, 25, 0.8);
+            --border: rgba(99, 102, 241, 0.3);
+            --text-primary: #e0e7ff;
+            --text-secondary: #a5b4fc;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Animated Blockchain Background */
+        .blockchain-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+            animation: bgShift 20s ease-in-out infinite;
+        }
+
+        @keyframes bgShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Hexagonal Grid Pattern */
+        .hex-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.1;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(99, 102, 241, 0.03) 2px, rgba(99, 102, 241, 0.03) 4px),
+                repeating-linear-gradient(60deg, transparent, transparent 2px, rgba(139, 92, 246, 0.03) 2px, rgba(139, 92, 246, 0.03) 4px),
+                repeating-linear-gradient(120deg, transparent, transparent 2px, rgba(6, 182, 212, 0.03) 2px, rgba(6, 182, 212, 0.03) 4px);
+            background-size: 100px 100px;
+            pointer-events: none;
+        }
+
+        /* Animated Blockchain Chain */
+        .blockchain-chain {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            z-index: 1;
+            opacity: 0.15;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .block {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .block::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -20px;
+            width: 20px;
+            height: 4px;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .block:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .block:nth-child(2) { left: 25%; animation-delay: 1s; }
+        .block:nth-child(3) { left: 40%; animation-delay: 2s; }
+        .block:nth-child(4) { left: 55%; animation-delay: 3s; }
+        .block:nth-child(5) { left: 70%; animation-delay: 4s; }
+        .block:nth-child(6) { left: 85%; animation-delay: 5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Particle Effects */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+            animation: particleFloat 15s linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Slide Container */
+        .slides-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Individual Slide */
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            position: relative;
+            opacity: 0;
+            transform: translateX(50px) scale(0.95);
+            transition: opacity 0.8s, transform 0.8s;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+
+        /* Title Slide */
+        .slide-title {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            padding: 80px 100px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 80px rgba(99, 102, 241, 0.2),
+                inset 0 0 60px rgba(99, 102, 241, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-title::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .slide-title h1 {
+            font-size: 5rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -2px;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from {
+                filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.5));
+            }
+            to {
+                filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.8));
+            }
+        }
+
+        .slide-title .subtitle {
+            font-size: 1.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .slide-title .group-info {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Content Slides */
+        .slide-content {
+            width: 90%;
+            max-width: 1400px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 60px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 60px rgba(99, 102, 241, 0.15),
+                inset 0 0 40px rgba(99, 102, 241, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .slide-content h2 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .slide-content h2::before {
+            content: '◉';
+            color: var(--primary);
+            font-size: 1.5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .slide-content h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 40px 0 20px 0;
+            color: var(--accent);
+        }
+
+        .slide-content ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .slide-content li {
+            padding: 20px;
+            margin: 15px 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+            border-left: 4px solid var(--primary);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-content li::before {
+            content: '▸';
+            color: var(--accent);
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+        .slide-content li:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            transform: translateX(15px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            border-left-color: var(--accent);
+        }
+
+        /* Budget Table */
+        .budget-table {
+            width: 100%;
+            margin: 30px 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 1rem;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .budget-table th {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.2));
+            padding: 18px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .budget-table td {
+            padding: 18px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+            color: var(--text-secondary);
+            background: rgba(15, 15, 25, 0.5);
+        }
+
+        .budget-table tr:hover td {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+        }
+
+        .budget-table tr:last-child td {
+            border-bottom: none;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin: 5px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .status-completed {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-in-progress {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1));
+            color: var(--accent);
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin: 40px 0;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+            border-color: var(--accent);
+        }
+
+        .result-card:hover::before {
+            opacity: 1;
+        }
+
+        .result-card .number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .result-card .label {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 50px;
+            margin: 40px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary), var(--accent));
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding-left: 40px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: 4px solid var(--bg-dark);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+            animation: timelinePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes timelinePulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(99, 102, 241, 0.6); }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(99, 102, 241, 0.9); }
+        }
+
+        .timeline-item h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .timeline-item p {
+            color: var(--text-secondary);
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: auto;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .code-block::before {
+            content: '> ';
+            color: var(--accent);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* Navigation */
+        .nav-indicator {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 12px;
+            background: rgba(15, 15, 25, 0.8);
+            padding: 12px 24px;
+            border-radius: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.3);
+            border: 2px solid rgba(99, 102, 241, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-dot.active {
+            background: var(--primary);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.8);
+            transform: scale(1.4);
+        }
+
+        .nav-arrows {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            font-size: 3.5rem;
+            color: rgba(99, 102, 241, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 20px;
+            background: rgba(15, 15, 25, 0.6);
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }
+
+        .nav-arrows:hover {
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .nav-prev {
+            left: 40px;
+        }
+
+        .nav-next {
+            right: 40px;
+        }
+
+        .nav-hint {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: rgba(165, 180, 252, 0.6);
+            font-size: 0.9rem;
+            text-align: center;
+            background: rgba(15, 15, 25, 0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .slide {
+                padding: 30px 20px;
+            }
+
+            .slide-title {
+                padding: 50px 30px;
+            }
+
+            .slide-title h1 {
+                font-size: 2.8rem;
+            }
+
+            .slide-content {
+                padding: 40px 30px;
+            }
+
+            .nav-arrows {
+                font-size: 2.5rem;
+                width: 60px;
+                height: 60px;
+                padding: 15px;
+            }
+
+            .nav-prev {
+                left: 15px;
+            }
+
+            .nav-next {
+                right: 15px;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blockchain-bg"></div>
+    <div class="hex-grid"></div>
+    <div class="blockchain-chain">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+    </div>
+    <div class="particles" id="particles"></div>
+
+    <div class="slides-container" id="slidesContainer">
+        <!-- Slide 1: Title -->
+        <div class="slide active" id="slide1">
+            <div class="slide-title">
+                <h1>BlockMed</h1>
+                <div class="subtitle">Blockchain-Based Prescription Verification</div>
+                <div class="subtitle" style="font-size: 1.4rem; margin-top: 20px;">Anti-Fake Medicine Tracking System</div>
+                <div class="group-info">
+                    <div style="margin-bottom: 15px;">Project Group: [Your Group Name/Number]</div>
+                    <div>Team Members: [Member Names]</div>
+                    <div style="margin-top: 15px; font-size: 1rem; color: var(--accent);">Version 2.0.0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Project Goals/Objectives -->
+        <div class="slide" id="slide2">
+            <div class="slide-content">
+                <h2>Project Goals & Objectives</h2>
+                <ul>
+                    <li>
+                        <strong>Secure Prescription Management:</strong> Create an immutable blockchain-based system for storing and verifying prescription data, preventing tampering and fraud.
+                    </li>
+                    <li>
+                        <strong>Anti-Counterfeit Medicine Tracking:</strong> Implement a comprehensive batch tracking system to verify medicine authenticity and prevent fake drugs from entering the supply chain.
+                    </li>
+                    <li>
+                        <strong>Multi-Stakeholder Platform:</strong> Develop separate portals for doctors, patients, and pharmacies with role-based access control and secure authentication.
+                    </li>
+                    <li>
+                        <strong>QR Code Integration:</strong> Enable instant prescription verification through QR code scanning, allowing pharmacies to verify prescriptions in real-time.
+                    </li>
+                    <li>
+                        <strong>Transparent Supply Chain:</strong> Track medicine batches from manufacturer to patient, ensuring complete traceability and accountability.
+                    </li>
+                    <li>
+                        <strong>Analytics & Reporting:</strong> Provide comprehensive analytics dashboard for monitoring prescriptions, medicine batches, and system usage.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 3: Project Tasks and Budget -->
+        <div class="slide" id="slide3">
+            <div class="slide-content">
+                <h2>Project Tasks & Budget</h2>
+                
+                <h3>Development Tasks</h3>
+                <table class="budget-table">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Description</th>
+                            <th>Estimated Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Smart Contract Development</td>
+                            <td>Solidity contracts for prescriptions, batches, and user management</td>
+                            <td>$2,500</td>
+                        </tr>
+                        <tr>
+                            <td>Frontend Development</td>
+                            <td>React.js application with multiple portals (Doctor, Patient, Pharmacy)</td>
+                            <td>$4,000</td>
+                        </tr>
+                        <tr>
+                            <td>Blockchain Integration</td>
+                            <td>MetaMask integration, ethers.js, transaction handling</td>
+                            <td>$1,500</td>
+                        </tr>
+                        <tr>
+                            <td>QR Code System</td>
+                            <td>QR generation, scanning, and verification system</td>
+                            <td>$800</td>
+                        </tr>
+                        <tr>
+                            <td>Batch Management System</td>
+                            <td>Medicine batch tracking and verification features</td>
+                            <td>$1,200</td>
+                        </tr>
+                        <tr>
+                            <td>Analytics Dashboard</td>
+                            <td>Data visualization and reporting tools</td>
+                            <td>$1,000</td>
+                        </tr>
+                        <tr>
+                            <td>Testing & QA</td>
+                            <td>Comprehensive testing, bug fixes, security audits</td>
+                            <td>$1,500</td>
+                        </tr>
+                        <tr>
+                            <td>Deployment & Infrastructure</td>
+                            <td>Smart contract deployment, hosting, blockchain network fees</td>
+                            <td>$1,500</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TOTAL</strong></td>
+                            <td></td>
+                            <td><strong>$14,000</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 4: Additional Budget Details -->
+        <div class="slide" id="slide4">
+            <div class="slide-content">
+                <h2>Budget Breakdown (Continued)</h2>
+                
+                <h3>Infrastructure & Operations</h3>
+                <ul>
+                    <li><strong>Blockchain Network:</strong> Polygon/Mumbai testnet deployment - $500</li>
+                    <li><strong>Web Hosting:</strong> Vercel/Netlify hosting - $300</li>
+                    <li><strong>Domain & SSL:</strong> Domain registration and security certificates - $200</li>
+                    <li><strong>Development Tools:</strong> IDE licenses, version control, CI/CD - $300</li>
+                    <li><strong>Documentation:</strong> Technical documentation and user guides - $200</li>
+                </ul>
+
+                <h3 style="margin-top: 40px;">Contingency & Buffer</h3>
+                <ul>
+                    <li><strong>Unexpected Issues:</strong> 10% buffer for unforeseen challenges - $1,400</li>
+                    <li><strong>Feature Enhancements:</strong> Additional features based on feedback - $1,000</li>
+                </ul>
+
+                <div class="code-block" style="margin-top: 30px; font-size: 1.2rem; text-align: center;">
+                    <strong>Total Project Budget: $14,000</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Current Status -->
+        <div class="slide" id="slide5">
+            <div class="slide-content">
+                <h2>Current Status of the Project</h2>
+                
+                <h3>Completed Tasks</h3>
+                <ul>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>MetaMask + Dev-mode UI:</strong> LoginPage.jsx with connect flow and state management in useStore.js
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>Global Configuration:</strong> ROLE_NAMES, ROLE_COLORS, VALIDITY_OPTIONS, CONTRACT_ADDRESS in config.js
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>Prescription Form & QR Generation:</strong> PrescriptionBuilder.jsx with QR display in PatientPortal.jsx
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>Patient Portal:</strong> Listing interface with prescription detail modal in PatientPortal.jsx
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>Pharmacy Verification UI:</strong> QR scanner scaffold implemented in PharmacyVerification.jsx
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>User Management:</strong> Verify/deactivate functionality with table UI in UserManagement.jsx
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>Helper Functions:</strong> formatTimestamp, isExpired, daysUntilExpiry in helpers.js
+                    </li>
+                    <li>
+                        <span class="status-badge status-completed">✓ Completed</span>
+                        <strong>Styling & i18n:</strong> Global CSS, print rules, EN/BN translations, contract ABI and deploy scripts
+                    </li>
+                </ul>
+
+                <h3 style="margin-top: 30px;">Incurred Costs</h3>
+                <div class="code-block" style="text-align: center; font-size: 1.3rem;">
+                    <strong>Total Incurred: $0</strong><br>
+                    <span style="font-size: 1rem; color: var(--accent);">All development completed using open-source tools and frameworks</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Results Obtained -->
+        <div class="slide" id="slide6">
+            <div class="slide-content">
+                <h2>Results Obtained So Far</h2>
+                
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="number">8</div>
+                        <div class="label">Core Features</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Major components completed
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <div class="number">3</div>
+                        <div class="label">User Portals</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Doctor, Patient, Pharmacy interfaces
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <div class="number">2</div>
+                        <div class="label">Languages</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            English & Bengali (i18n)
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <div class="number">100%</div>
+                        <div class="label">Open Source</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Zero cost development
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px;">Key Achievements</h3>
+                <ul>
+                    <li>Complete MetaMask integration with dev-mode UI and state management</li>
+                    <li>Global configuration system with roles, colors, and validity options</li>
+                    <li>Prescription form with QR code generation and display</li>
+                    <li>Patient portal with listing and detail modal functionality</li>
+                    <li>Pharmacy verification UI with QR scanner scaffold</li>
+                    <li>User management system with verify/deactivate capabilities</li>
+                    <li>Helper utilities for timestamps, expiry checks, and date formatting</li>
+                    <li>Full internationalization support (EN/BN) with styling and print rules</li>
+                    <li>Contract ABI and deployment scripts with documentation</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 7: Future Work and Timeline -->
+        <div class="slide" id="slide7">
+            <div class="slide-content">
+                <h2>Future Work & Timeline</h2>
+                
+                <h3>Priority A - Must / High Impact (Weeks 1-3)</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>1. On-chain QR Verification</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Parse QR → call contract verify → show result & reason</p>
+                        <p>File: PharmacyVerification.jsx | Time: 1 week</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>2. IPFS File Upload</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Add IPFS upload for prescription attachments</p>
+                        <p>File: PrescriptionBuilder.jsx | Time: 1 week</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>3. Route / Role-based Access Control</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Enforce role checks using useStore and ROLE_NAMES</p>
+                        <p>Files: App.jsx, LoginPage.jsx, UserManagement.jsx | Time: 1 week</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>4. Fix Contract Address & Env Flow</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Load CONTRACT_ADDRESS from env, make deploy scriptable</p>
+                        <p>Files: config.js, deploy.cjs, hardhat.config.cjs | Time: 3 days</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Future Work Continued -->
+        <div class="slide" id="slide8">
+            <div class="slide-content">
+                <h2>Future Work & Timeline (Continued)</h2>
+                
+                <h3>Priority B - Medium (Weeks 4-6)</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>5. Unit & Integration Tests</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Smart contract tests (Hardhat) + E2E (Playwright/Cypress)</p>
+                        <p>Time: 2 weeks</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>6. Better Transaction UX</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Transaction queue, confirmations, retry/cancel, toast states</p>
+                        <p>Files: PrescriptionBuilder.jsx, PatientPortal.jsx | Time: 1 week</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>7. Persistence & Reconnect Improvements</h4>
+                        <p><span class="status-badge status-pending">Pending</span> Improve persist usage, handle wallet disconnect/network switch</p>
+                        <p>File: useStore.js | Time: 1 week</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px;">Priority C - Nice-to-have / Polish (Weeks 7-8)</h3>
+                <ul style="font-size: 0.95rem;">
+                    <li><strong>8. Audit & Event Log Viewer:</strong> Show contract events (prescriptionAdded, verified) as activity log</li>
+                    <li><strong>9. Accessibility & Responsive Fixes:</strong> Keyboard navigation, aria labels, color contrast</li>
+                    <li><strong>10. Internationalization Completion:</strong> Finish missing BN translations, toggle UX</li>
+                    <li><strong>11. Deploy to Testnet + CI:</strong> Deploy to Sepolia/Mumbai, add CI/CD pipeline</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 9: Timeline Summary -->
+        <div class="slide" id="slide9">
+            <div class="slide-content">
+                <h2>Timeline Summary</h2>
+                
+                <div class="results-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 30px;">
+                    <div class="result-card">
+                        <div class="number">2-3</div>
+                        <div class="label">Weeks</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Priority A (Must)
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <div class="number">2-3</div>
+                        <div class="label">Weeks</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Priority B (Medium)
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <div class="number">2-4</div>
+                        <div class="label">Weeks</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Priority C (Polish)
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <div class="number">1-2</div>
+                        <div class="label">Months</div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: rgba(165, 180, 252, 0.7);">
+                            Total Timeline
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Concrete Next Actions (This Week)</h3>
+                <ul>
+                    <li>Wire QR → contract verify flow in PharmacyVerification.jsx</li>
+                    <li>Add IPFS upload button to PrescriptionBuilder.jsx</li>
+                    <li>Add env-based CONTRACT_ADDRESS fallback in config.js</li>
+                </ul>
+
+                <div class="code-block" style="margin-top: 30px; text-align: center;">
+                    <strong>Estimated Completion: 1-2 Months</strong><br>
+                    <span style="font-size: 0.9rem; color: var(--accent);">All development using open-source tools - $0 budget</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-arrows nav-prev" id="prevBtn" onclick="changeSlide(-1)">‹</div>
+    <div class="nav-arrows nav-next" id="nextBtn" onclick="changeSlide(1)">›</div>
+    
+    <div class="nav-indicator" id="navIndicator"></div>
+    <div class="nav-hint">Use ← → arrow keys or click navigation dots</div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 9;
+
+        // Create particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Initialize navigation dots
+        const navIndicator = document.getElementById('navIndicator');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.onclick = () => goToSlide(i);
+            navIndicator.appendChild(dot);
+        }
+
+        function updateSlides() {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.nav-dot');
+            const container = document.getElementById('slidesContainer');
+
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentSlide);
+            });
+
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            container.style.transform = `translateX(-${currentSlide * 100}vw)`;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 0) currentSlide = totalSlides - 1;
+            if (currentSlide >= totalSlides) currentSlide = 0;
+            updateSlides();
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlides();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // Touch/swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) changeSlide(1);
+            if (touchEndX > touchStartX + 50) changeSlide(-1);
+        }
+
+        // Initialize
+        updateSlides();
+    </script>
+</body>
+</html>

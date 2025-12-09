@@ -25,6 +25,12 @@ export const useStore = create(
       logout: () => {
         // Set flag to prevent auto-reconnect
         sessionStorage.setItem('blockmed-logged-out', 'true')
+        
+        // Reset provider cache
+        if (window.__sharedBrowserProvider) {
+          delete window.__sharedBrowserProvider
+        }
+        
         set({ 
           account: null, 
           user: null, 
@@ -60,7 +66,7 @@ export const useStore = create(
       network: null,
       chainId: null,
       isCorrectNetwork: false,
-      isOnline: navigator.onLine,
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
       
       setNetwork: (network, chainId) => set({ 
         network, 
@@ -149,6 +155,11 @@ export const useStore = create(
         lastSyncTime: state.lastSyncTime,
         notifications: state.notifications,
       }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('Error rehydrating store:', error)
+        }
+      },
     }
   )
 )
@@ -160,6 +171,7 @@ export const usePrescriptionStore = create((set, get) => ({
   // Patient Info
   patient: {
     name: '',
+    nid: '', // National ID Number - unique identifier
     dateOfBirth: null,
     age: '',
     gender: '',
@@ -227,7 +239,7 @@ export const usePrescriptionStore = create((set, get) => ({
   }),
   
   reset: () => set({
-    patient: { name: '', dateOfBirth: null, age: '', gender: '', phone: '', address: '' },
+    patient: { name: '', nid: '', dateOfBirth: null, age: '', gender: '', phone: '', address: '' },
     symptoms: '',
     diagnosis: '',
     medicines: [],

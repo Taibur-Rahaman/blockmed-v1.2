@@ -27,8 +27,15 @@ export const shortenHash = (hash, chars = 6) => {
 
 /**
  * Generate a patient hash from patient data
+ * Uses NID (National ID) as the unique identifier if available
  */
 export const generatePatientHash = (patientData) => {
+  // If NID is provided, use it as the unique identifier (hash it for privacy)
+  if (patientData.nid && patientData.nid.trim()) {
+    // Hash NID to maintain privacy while keeping it unique
+    return CryptoJS.SHA256(`NID:${patientData.nid.trim()}`).toString(CryptoJS.enc.Hex).substring(0, 32)
+  }
+  // Fallback to old method if no NID
   const data = `${patientData.name}|${patientData.dateOfBirth || ''}|${Date.now()}`
   return CryptoJS.SHA256(data).toString(CryptoJS.enc.Base64).substring(0, 32)
 }
@@ -39,6 +46,20 @@ export const generatePatientHash = (patientData) => {
 export const generatePrescriptionHash = (prescriptionData) => {
   const data = JSON.stringify(prescriptionData) + Date.now()
   return CryptoJS.SHA256(data).toString()
+}
+
+/**
+ * Generate a hash of medicines array for verification
+ * This ensures medicines cannot be tampered with
+ */
+export const generateMedicinesHash = (medicines) => {
+  if (!medicines || medicines.length === 0) return ''
+  // Sort medicines by name to ensure consistent hashing
+  const sorted = [...medicines].sort((a, b) => 
+    (a.name || a.medicineName || '').localeCompare(b.name || b.medicineName || '')
+  )
+  const medicinesString = JSON.stringify(sorted)
+  return CryptoJS.SHA256(medicinesString).toString(CryptoJS.enc.Hex)
 }
 
 // ============================================

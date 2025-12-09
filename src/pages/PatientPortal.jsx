@@ -38,7 +38,7 @@ const PatientPortal = () => {
     setPrescriptions([])
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
 
       const prescriptionIds = await contract.getPrescriptionsByPatient(patientHash)

@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { ethers } from 'ethers'
 import { 
   FiFileText, FiCheckCircle, FiUsers, FiPackage, 
   FiAlertTriangle, FiTrendingUp, FiActivity, FiBox,
   FiArrowRight, FiPlus, FiClock
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { CONTRACT_ADDRESS } from '../utils/config'
-import contractABI from '../utils/contractABI.json'
 import { formatNumber, formatTimestamp, getRoleName } from '../utils/helpers'
+import { getReadContract, getCurrentAccount } from '../utils/contractHelper'
+import { isDevMode } from '../utils/devMode'
 
 const Dashboard = () => {
   const { t } = useTranslation()
@@ -34,11 +33,11 @@ const Dashboard = () => {
   }, [account])
 
   const fetchDashboardData = async () => {
-    if (!window.ethereum) return
+    // Works with both Dev Mode and Wallet Mode
+    if (!isDevMode() && !window.ethereum) return
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
+      const contract = await getReadContract()
 
       // Get system stats
       const systemStats = await contract.getSystemStats()

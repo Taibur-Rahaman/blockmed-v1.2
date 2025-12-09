@@ -18,7 +18,7 @@ const PatientDashboard = () => {
     setResults([])
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+      const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
 
       const count = await contract.prescriptionCount()

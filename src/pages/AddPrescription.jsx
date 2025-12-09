@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
+import { getCode, getProvider } from '../utils/provider'
 import { QRCodeSVG } from 'qrcode.react'
 import contractABI from '../utils/contractABI.json'
 import { CONTRACT_ADDRESS } from '../utils/config'
@@ -29,6 +30,7 @@ const AddPrescription = ({ account }) => {
   const [qrValue, setQrValue] = useState('')
   const qrRef = useRef(null)
   const [error, setError] = useState('')
+  const [contractDeployed, setContractDeployed] = useState(null)
 
   const handleAddMedicine = (med) => setMedicines(prev => [...prev, med])
   const handleRemoveMedicine = (index) => setMedicines(prev => prev.filter((_, i) => i !== index))
@@ -58,15 +60,39 @@ const AddPrescription = ({ account }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.patientHash || !formData.ipfsHash) { setError('Patient hash and IPFS/data are required to submit'); return }
-    if (!window.ethereum) { setError('MetaMask not found'); return }
+  if (!formData.patientHash || !formData.ipfsHash) { setError('Patient hash and IPFS/data are required to submit'); return }
+  if (!window.ethereum) { setError('MetaMask not found'); return }
+
+    // verify contract exists at configured address
+    try{
+      const code = await getCode(CONTRACT_ADDRESS)
+      if(!code || code === '0x' || code === '0x0'){
+        setError(`No contract bytecode found at ${CONTRACT_ADDRESS}. Submission blocked.`)
+        alert(`❌ No contract deployed at ${CONTRACT_ADDRESS}. Check your deployment and network.`)
+        return
+      }
+    }catch(err){
+      setError('Failed to verify contract on network')
+      return
+    }
 
     setIsSubmitting(true)
     setError('')
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
+      // Use contractHelper for proper Dev Mode / Wallet Mode support
+      const { getWriteContract, isBlockchainReady, getCurrentAccount } = await import('../utils/contractHelper')
+      
+      // Check if blockchain is ready
+      const ready = await isBlockchainReady()
+      if (!ready.ready) {
+        setError(`Blockchain not ready: ${ready.error}. Please connect a wallet or enable Dev Mode.`)
+        setIsSubmitting(false)
+        return
+      }
+
+      // Get contract instance (automatically uses Dev Mode or Wallet)
+      const contract = await getWriteContract()
+      
       const tx = await contract.addPrescription(formData.patientHash, formData.ipfsHash, {
         gasPrice: 1,  // Set to 1 wei (minimal cost for real blockchain demo)
         gasLimit: 300000  // Set reasonable gas limit
@@ -82,7 +108,11 @@ const AddPrescription = ({ account }) => {
       alert('✅ Prescription Submitted to Blockchain!\n\n🔗 Transaction Hash: ' + tx.hash.substring(0, 10) + '...')
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Failed to submit')
+      let errorMsg = err.message || 'Failed to submit'
+      if (err.message?.includes('Not connected') || err.message?.includes('could not coalesce')) {
+        errorMsg = 'Not connected to blockchain. Please connect a wallet or enable Dev Mode.'
+      }
+      setError(errorMsg)
     } finally {
       setIsSubmitting(false)
     }
@@ -98,6 +128,19 @@ const AddPrescription = ({ account }) => {
     setPatient(initialPatient); setSymptoms(''); setDiagnosis(''); setMedicines([]); setTests(''); setAdvice(''); setFollowUp('')
     setFormData({ patientHash: '', ipfsHash: '' }); setTxHash(''); setPrescriptionId(null); setQrValue(''); setError('')
   }
+
+  // on mount, check whether contract exists at configured address
+  React.useEffect(()=>{
+    const check = async ()=>{
+      if(!window.ethereum) { setContractDeployed(false); return }
+      try{
+        const p = new ethers.BrowserProvider(window.ethereum)
+        const code = await p.getCode(CONTRACT_ADDRESS)
+        setContractDeployed(!( !code || code === '0x' || code === '0x0'))
+      }catch(e){ setContractDeployed(false) }
+    }
+    check()
+  }, [])
 
   return (
     <div className="container" style={{ paddingTop: 30, maxWidth: 1000 }}>

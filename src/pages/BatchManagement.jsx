@@ -44,7 +44,7 @@ const BatchManagement = () => {
 
     setLoading(true)
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
 
       const batchCount = await contract.batchCount()
@@ -103,7 +103,7 @@ const BatchManagement = () => {
     setSubmitting(true)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
 
@@ -147,7 +147,7 @@ const BatchManagement = () => {
     if (!reason) return
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
 

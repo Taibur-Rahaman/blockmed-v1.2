@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
@@ -10,13 +10,67 @@ import {
 import { useStore } from '../store/useStore'
 import { CONTRACT_ADDRESS, NETWORKS, DEFAULT_NETWORK } from '../utils/config'
 import { shortenAddress, copyToClipboard } from '../utils/helpers'
+import { 
+  enableDevMode, 
+  disableDevMode, 
+  isDevMode, 
+  getDevAccount,
+  DEV_ACCOUNTS,
+  testHardhatConnection
+} from '../utils/devMode'
 
 const Settings = () => {
   const { t } = useTranslation()
   const { 
     account, user, language, toggleLanguage, 
-    theme, toggleTheme, isOnline 
+    theme, toggleTheme, isOnline, setAccount, setUser
   } = useStore()
+  
+  const [devModeActive, setDevModeActive] = useState(isDevMode())
+  const [hardhatRunning, setHardhatRunning] = useState(false)
+  const [selectedDevAccount, setSelectedDevAccount] = useState(0)
+  
+  useEffect(() => {
+    const checkHardhat = async () => {
+      const running = await testHardhatConnection()
+      setHardhatRunning(running)
+    }
+    checkHardhat()
+    
+    if (devModeActive) {
+      const devAcc = getDevAccount()
+      if (devAcc) {
+        const index = DEV_ACCOUNTS.findIndex(acc => acc.address === devAcc.address)
+        if (index >= 0) setSelectedDevAccount(index)
+      }
+    }
+  }, [])
+  
+  const handleEnableDevMode = async () => {
+    try {
+      const result = await enableDevMode(selectedDevAccount)
+      if (result.success) {
+        setDevModeActive(true)
+        setAccount(result.account.address)
+        toast.success(`Dev Mode enabled: ${result.account.name}`)
+        // Reload to update the app state
+        setTimeout(() => window.location.reload(), 1000)
+      } else {
+        toast.error(result.error || 'Failed to enable Dev Mode')
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to enable Dev Mode')
+    }
+  }
+  
+  const handleDisableDevMode = () => {
+    disableDevMode()
+    setDevModeActive(false)
+    setAccount(null)
+    setUser(null)
+    toast.success('Dev Mode disabled')
+    setTimeout(() => window.location.reload(), 1000)
+  }
 
   const handleCopyAddress = async () => {
     await copyToClipboard(account)
@@ -234,11 +288,105 @@ const Settings = () => {
         </div>
       </motion.div>
 
-      {/* Version Info */}
+      {/* Dev Mode Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
+        className="card"
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <span className="text-primary-400">🔧</span>
+          Dev Mode
+        </h2>
+
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-white font-medium">Dev Mode Status</p>
+                <p className="text-sm text-gray-400">
+                  {devModeActive 
+                    ? `Active: ${getDevAccount()?.name || 'Unknown'}`
+                    : 'Not enabled - Enable to use Hardhat accounts without a wallet'}
+                </p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                devModeActive 
+                  ? 'bg-green-500/20 text-green-400' 
+                  : 'bg-gray-500/20 text-gray-400'
+              }`}>
+                {devModeActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+
+            <div className="mb-4 p-3 rounded-lg bg-white/5">
+              <p className="text-xs text-gray-400 mb-2">Hardhat Status:</p>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${hardhatRunning ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                <span className="text-sm text-white">
+                  {hardhatRunning ? '✅ Running on port 8545' : '❌ Not running'}
+                </span>
+              </div>
+              {!hardhatRunning && (
+                <p className="text-xs text-yellow-400 mt-2">
+                  Run: <code className="bg-black/30 px-2 py-1 rounded">npx hardhat node</code>
+                </p>
+              )}
+            </div>
+
+            {!devModeActive ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Select Dev Account:</label>
+                  <select
+                    value={selectedDevAccount}
+                    onChange={(e) => setSelectedDevAccount(parseInt(e.target.value))}
+                    className="w-full form-select"
+                    disabled={!hardhatRunning}
+                  >
+                    {DEV_ACCOUNTS.map((acc, index) => (
+                      <option key={index} value={index}>
+                        {acc.name} - {acc.address.substring(0, 10)}...
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleEnableDevMode}
+                  disabled={!hardhatRunning}
+                  className="w-full btn-primary"
+                >
+                  {hardhatRunning ? '🔧 Enable Dev Mode' : '⏳ Waiting for Hardhat...'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/30">
+                  <p className="text-sm text-white font-medium mb-1">
+                    {getDevAccount()?.name}
+                  </p>
+                  <p className="text-xs text-gray-400 font-mono">
+                    {getDevAccount()?.address}
+                  </p>
+                </div>
+                <button
+                  onClick={handleDisableDevMode}
+                  className="w-full btn-secondary"
+                >
+                  🔒 Disable Dev Mode
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Version Info */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
         className="text-center py-6"
       >
         <p className="text-gray-500 text-sm">

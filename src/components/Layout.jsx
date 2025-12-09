@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
 import { shortenAddress, getRoleName, getRoleColorClass } from '../utils/helpers'
+import { disableDevMode } from '../utils/devMode'
 
 const Layout = ({ children }) => {
   const { t } = useTranslation()
@@ -25,7 +26,17 @@ const Layout = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleLogout = () => {
+    // Disable Dev Mode if enabled
+    try {
+      disableDevMode()
+    } catch (e) {
+      console.log('Error disabling dev mode:', e)
+    }
+    
+    // Clear logout
     logout()
+    
+    // Navigate to login
     navigate('/')
   }
 
@@ -33,12 +44,13 @@ const Layout = ({ children }) => {
     { path: '/', icon: FiHome, label: t('nav.dashboard'), roles: [1, 2, 3, 4, 5, 6] },
     { path: '/prescription/create', icon: FiFileText, label: t('nav.createPrescription'), roles: [1, 2] },
     { path: '/pharmacy', icon: FiCheckCircle, label: t('nav.verification'), roles: [1, 2, 3, 5] },
+    { path: '/patient-history', icon: FiUser, label: 'Patient History (NID)', roles: [1, 2, 3, 5] },
     { path: '/patient', icon: FiUser, label: t('nav.patients'), roles: [1, 2, 5] },
     { path: '/medicines', icon: FiPackage, label: t('nav.medicines'), roles: [1, 2, 3] },
     { path: '/batches', icon: FiBox, label: t('nav.batches'), roles: [1, 4, 6] },
     { path: '/users', icon: FiUsers, label: t('nav.users'), roles: [1, 6] },
-    { path: '/analytics', icon: FiPieChart, label: t('nav.analytics'), roles: [1, 6], disabled: true, badge: 'Soon' },
-    { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6], disabled: true, badge: 'Soon' },
+    { path: '/analytics', icon: FiPieChart, label: t('nav.analytics'), roles: [1, 6] },
+    { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6] },
   ]
 
   // Filter nav items based on role

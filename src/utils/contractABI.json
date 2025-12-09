@@ -7,11 +7,73 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "id", "type": "uint256"},
-      {"indexed": false, "internalType": "string", "name": "batchNumber", "type": "string"},
-      {"indexed": false, "internalType": "string", "name": "reason", "type": "string"},
-      {"indexed": true, "internalType": "address", "name": "flaggedBy", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "batchNumber",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "medicineName",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "manufacturer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "BatchCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "batchNumber",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "flaggedBy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "name": "BatchFlagged",
     "type": "event"
@@ -19,11 +81,36 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "id", "type": "uint256"},
-      {"indexed": false, "internalType": "string", "name": "batchNumber", "type": "string"},
-      {"indexed": false, "internalType": "string", "name": "reason", "type": "string"},
-      {"indexed": true, "internalType": "address", "name": "recalledBy", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "batchNumber",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recalledBy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "name": "BatchRecalled",
     "type": "event"
@@ -31,11 +118,36 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "batchId", "type": "uint256"},
-      {"indexed": false, "internalType": "string", "name": "batchNumber", "type": "string"},
-      {"indexed": false, "internalType": "string", "name": "alertType", "type": "string"},
-      {"indexed": true, "internalType": "address", "name": "reportedBy", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "batchId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "batchNumber",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "alertType",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "reportedBy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "name": "FakeMedicineAlert",
     "type": "event"
@@ -43,11 +155,36 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "id", "type": "uint256"},
-      {"indexed": false, "internalType": "string", "name": "patientHash", "type": "string"},
-      {"indexed": true, "internalType": "address", "name": "doctor", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "expiresAt", "type": "uint256"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "patientHash",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expiresAt",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "name": "PrescriptionCreated",
     "type": "event"
@@ -55,9 +192,24 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "id", "type": "uint256"},
-      {"indexed": true, "internalType": "address", "name": "pharmacist", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "pharmacist",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "name": "PrescriptionDispensed",
     "type": "event"
@@ -65,30 +217,61 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-      {"indexed": false, "internalType": "enum BlockMedV2.Role", "name": "role", "type": "uint8"},
-      {"indexed": false, "internalType": "string", "name": "name", "type": "string"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "version",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
-    "name": "UserRegistered",
+    "name": "PrescriptionUpdated",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-      {"indexed": true, "internalType": "address", "name": "verifiedBy", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
-    ],
-    "name": "UserVerified",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-      {"indexed": true, "internalType": "address", "name": "deactivatedBy", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "deactivatedBy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "name": "UserDeactivated",
     "type": "event"
@@ -96,113 +279,275 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "uint256", "name": "id", "type": "uint256"},
-      {"indexed": false, "internalType": "string", "name": "batchNumber", "type": "string"},
-      {"indexed": false, "internalType": "string", "name": "medicineName", "type": "string"},
-      {"indexed": true, "internalType": "address", "name": "manufacturer", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum BlockMedV2.Role",
+        "name": "role",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
-    "name": "BatchCreated",
+    "name": "UserRegistered",
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-    "stateMutability": "view",
-    "type": "function"
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "verifiedBy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "UserVerified",
+    "type": "event"
   },
   {
-    "inputs": [],
-    "name": "prescriptionCount",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_patientHash",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_ipfsHash",
+        "type": "string"
+      }
+    ],
+    "name": "addPrescription",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "batchCount",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "name": "prescriptions",
     "outputs": [
-      {"internalType": "uint256", "name": "id", "type": "uint256"},
-      {"internalType": "string", "name": "patientHash", "type": "string"},
-      {"internalType": "string", "name": "ipfsHash", "type": "string"},
-      {"internalType": "address", "name": "doctor", "type": "address"},
-      {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
-      {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
-      {"internalType": "bool", "name": "isDispensed", "type": "bool"},
-      {"internalType": "address", "name": "dispensedBy", "type": "address"},
-      {"internalType": "uint256", "name": "dispensedAt", "type": "uint256"},
-      {"internalType": "uint256", "name": "version", "type": "uint256"},
-      {"internalType": "bool", "name": "isActive", "type": "bool"},
-      {"internalType": "string", "name": "digitalSignature", "type": "string"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "address", "name": "", "type": "address"}],
-    "name": "users",
-    "outputs": [
-      {"internalType": "address", "name": "userAddress", "type": "address"},
-      {"internalType": "enum BlockMedV2.Role", "name": "role", "type": "uint8"},
-      {"internalType": "string", "name": "name", "type": "string"},
-      {"internalType": "string", "name": "licenseNumber", "type": "string"},
-      {"internalType": "bool", "name": "isVerified", "type": "bool"},
-      {"internalType": "bool", "name": "isActive", "type": "bool"},
-      {"internalType": "uint256", "name": "registeredAt", "type": "uint256"}
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "string", "name": "_name", "type": "string"},
-      {"internalType": "string", "name": "_licenseNumber", "type": "string"},
-      {"internalType": "enum BlockMedV2.Role", "name": "_role", "type": "uint8"}
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
     ],
-    "name": "registerUser",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "name": "batchNumberToId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_batchNumber",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_medicineName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_genericName",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_expiresAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_origin",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_ipfsHash",
+        "type": "string"
+      }
+    ],
+    "name": "createMedicineBatch",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
-    "name": "verifyUser",
-    "outputs": [],
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_patientHash",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_validityDays",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_digitalSignature",
+        "type": "string"
+      }
+    ],
+    "name": "createPrescription",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      }
+    ],
     "name": "deactivateUser",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
-    "name": "getUser",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_prescriptionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "dispensePrescription",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "doctorPrescriptions",
     "outputs": [
       {
-        "components": [
-          {"internalType": "address", "name": "userAddress", "type": "address"},
-          {"internalType": "enum BlockMedV2.Role", "name": "role", "type": "uint8"},
-          {"internalType": "string", "name": "name", "type": "string"},
-          {"internalType": "string", "name": "licenseNumber", "type": "string"},
-          {"internalType": "bool", "name": "isVerified", "type": "bool"},
-          {"internalType": "bool", "name": "isActive", "type": "bool"},
-          {"internalType": "uint256", "name": "registeredAt", "type": "uint256"}
-        ],
-        "internalType": "struct BlockMedV2.User",
+        "internalType": "uint256",
         "name": "",
-        "type": "tuple"
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_batchId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_reason",
+        "type": "string"
+      }
+    ],
+    "name": "flagBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "flaggedBatches",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -211,64 +556,302 @@
   {
     "inputs": [],
     "name": "getAllUsers",
-    "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "string", "name": "_patientHash", "type": "string"},
-      {"internalType": "string", "name": "_ipfsHash", "type": "string"},
-      {"internalType": "uint256", "name": "_validityDays", "type": "uint256"},
-      {"internalType": "string", "name": "_digitalSignature", "type": "string"}
+      {
+        "internalType": "string",
+        "name": "_batchNumber",
+        "type": "string"
+      }
     ],
-    "name": "createPrescription",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "nonpayable",
+    "name": "getBatchByNumber",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "batchNumber",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "medicineName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "genericName",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "manufacturer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "manufacturedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiresAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "origin",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "ipfsHash",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isRecalled",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "recallReason",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isFlagged",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "flagReason",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BlockMedV2.MedicineBatch",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "string", "name": "_patientHash", "type": "string"},
-      {"internalType": "string", "name": "_ipfsHash", "type": "string"}
+      {
+        "internalType": "address",
+        "name": "_manufacturer",
+        "type": "address"
+      }
     ],
-    "name": "addPrescription",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "nonpayable",
+    "name": "getBatchesByManufacturer",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "uint256", "name": "_prescriptionId", "type": "uint256"}],
-    "name": "dispensePrescription",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "inputs": [],
+    "name": "getFlaggedBatches",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "uint256", "name": "_id", "type": "uint256"}],
-    "name": "verifyPrescription",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_batchId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getMedicineBatch",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "batchNumber",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "medicineName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "genericName",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "manufacturer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "manufacturedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiresAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "origin",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "ipfsHash",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isRecalled",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "recallReason",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isFlagged",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "flagReason",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BlockMedV2.MedicineBatch",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "uint256", "name": "_id", "type": "uint256"}],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
     "name": "getPrescription",
     "outputs": [
       {
         "components": [
-          {"internalType": "uint256", "name": "id", "type": "uint256"},
-          {"internalType": "string", "name": "patientHash", "type": "string"},
-          {"internalType": "string", "name": "ipfsHash", "type": "string"},
-          {"internalType": "address", "name": "doctor", "type": "address"},
-          {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
-          {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
-          {"internalType": "bool", "name": "isDispensed", "type": "bool"},
-          {"internalType": "address", "name": "dispensedBy", "type": "address"},
-          {"internalType": "uint256", "name": "dispensedAt", "type": "uint256"},
-          {"internalType": "uint256", "name": "version", "type": "uint256"},
-          {"internalType": "bool", "name": "isActive", "type": "bool"},
-          {"internalType": "string", "name": "digitalSignature", "type": "string"}
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "patientHash",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "ipfsHash",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "doctor",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiresAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "isDispensed",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "dispensedBy",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "dispensedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "version",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "digitalSignature",
+            "type": "string"
+          }
         ],
         "internalType": "struct BlockMedV2.Prescription",
         "name": "",
@@ -279,37 +862,508 @@
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "string", "name": "_patientHash", "type": "string"}],
-    "name": "getPrescriptionsByPatient",
-    "outputs": [{"internalType": "uint256[]", "name": "", "type": "uint256[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "address", "name": "_doctor", "type": "address"}],
-    "name": "getPrescriptionsByDoctor",
-    "outputs": [{"internalType": "uint256[]", "name": "", "type": "uint256[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
-      {"internalType": "string", "name": "_batchNumber", "type": "string"},
-      {"internalType": "string", "name": "_medicineName", "type": "string"},
-      {"internalType": "string", "name": "_genericName", "type": "string"},
-      {"internalType": "uint256", "name": "_expiresAt", "type": "uint256"},
-      {"internalType": "string", "name": "_origin", "type": "string"},
-      {"internalType": "string", "name": "_ipfsHash", "type": "string"}
+      {
+        "internalType": "uint256",
+        "name": "_prescriptionId",
+        "type": "uint256"
+      }
     ],
-    "name": "createMedicineBatch",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "nonpayable",
+    "name": "getPrescriptionVersions",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "prescriptionId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "version",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "ipfsHash",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "reason",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct BlockMedV2.PrescriptionVersion[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "uint256", "name": "_batchId", "type": "uint256"},
-      {"internalType": "string", "name": "_reason", "type": "string"}
+      {
+        "internalType": "address",
+        "name": "_doctor",
+        "type": "address"
+      }
+    ],
+    "name": "getPrescriptionsByDoctor",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_patientHash",
+        "type": "string"
+      }
+    ],
+    "name": "getPrescriptionsByPatient",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRecalledBatches",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getSystemStats",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "totalUsers",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalPrescriptions",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalBatches",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dispensedCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "flaggedCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "recalledCount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      }
+    ],
+    "name": "getUser",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "userAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "enum BlockMedV2.Role",
+            "name": "role",
+            "type": "uint8"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "licenseNumber",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isVerified",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "registeredAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BlockMedV2.User",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_prescriptionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "isPrescriptionValid",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "isValid",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "status",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "manufacturerBatches",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "medicineBatches",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "batchNumber",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "medicineName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "genericName",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "manufacturer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "manufacturedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expiresAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "origin",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "isRecalled",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "recallReason",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "isFlagged",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "flagReason",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "createdAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "patientPrescriptions",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "prescriptionCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "prescriptionVersions",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "prescriptionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "version",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "createdAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "prescriptions",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "patientHash",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "doctor",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "createdAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expiresAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "isDispensed",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "dispensedBy",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dispensedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "version",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "isActive",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "digitalSignature",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_batchId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_reason",
+        "type": "string"
+      }
     ],
     "name": "recallBatch",
     "outputs": [],
@@ -318,111 +1372,238 @@
   },
   {
     "inputs": [
-      {"internalType": "uint256", "name": "_batchId", "type": "uint256"},
-      {"internalType": "string", "name": "_reason", "type": "string"}
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    "name": "flagBatch",
+    "name": "recalledBatches",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_licenseNumber",
+        "type": "string"
+      },
+      {
+        "internalType": "enum BlockMedV2.Role",
+        "name": "_role",
+        "type": "uint8"
+      }
+    ],
+    "name": "registerUser",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalDispensations",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalVerifications",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_prescriptionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_newIpfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_reason",
+        "type": "string"
+      }
+    ],
+    "name": "updatePrescription",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "userAddresses",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "users",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "enum BlockMedV2.Role",
+        "name": "role",
+        "type": "uint8"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "licenseNumber",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "isVerified",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isActive",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "registeredAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_batchNumber",
+        "type": "string"
+      }
+    ],
+    "name": "verifyBatch",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "exists",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isRecalled",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isFlagged",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isExpired",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "status",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "verifyPrescription",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "uint256", "name": "_batchId", "type": "uint256"}],
-    "name": "getMedicineBatch",
-    "outputs": [
+    "inputs": [
       {
-        "components": [
-          {"internalType": "uint256", "name": "id", "type": "uint256"},
-          {"internalType": "string", "name": "batchNumber", "type": "string"},
-          {"internalType": "string", "name": "medicineName", "type": "string"},
-          {"internalType": "string", "name": "genericName", "type": "string"},
-          {"internalType": "address", "name": "manufacturer", "type": "address"},
-          {"internalType": "uint256", "name": "manufacturedAt", "type": "uint256"},
-          {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
-          {"internalType": "string", "name": "origin", "type": "string"},
-          {"internalType": "string", "name": "ipfsHash", "type": "string"},
-          {"internalType": "bool", "name": "isRecalled", "type": "bool"},
-          {"internalType": "string", "name": "recallReason", "type": "string"},
-          {"internalType": "bool", "name": "isFlagged", "type": "bool"},
-          {"internalType": "string", "name": "flagReason", "type": "string"},
-          {"internalType": "uint256", "name": "createdAt", "type": "uint256"}
-        ],
-        "internalType": "struct BlockMedV2.MedicineBatch",
-        "name": "",
-        "type": "tuple"
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "string", "name": "_batchNumber", "type": "string"}],
-    "name": "getBatchByNumber",
-    "outputs": [
-      {
-        "components": [
-          {"internalType": "uint256", "name": "id", "type": "uint256"},
-          {"internalType": "string", "name": "batchNumber", "type": "string"},
-          {"internalType": "string", "name": "medicineName", "type": "string"},
-          {"internalType": "string", "name": "genericName", "type": "string"},
-          {"internalType": "address", "name": "manufacturer", "type": "address"},
-          {"internalType": "uint256", "name": "manufacturedAt", "type": "uint256"},
-          {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
-          {"internalType": "string", "name": "origin", "type": "string"},
-          {"internalType": "string", "name": "ipfsHash", "type": "string"},
-          {"internalType": "bool", "name": "isRecalled", "type": "bool"},
-          {"internalType": "string", "name": "recallReason", "type": "string"},
-          {"internalType": "bool", "name": "isFlagged", "type": "bool"},
-          {"internalType": "string", "name": "flagReason", "type": "string"},
-          {"internalType": "uint256", "name": "createdAt", "type": "uint256"}
-        ],
-        "internalType": "struct BlockMedV2.MedicineBatch",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "string", "name": "_batchNumber", "type": "string"}],
-    "name": "verifyBatch",
-    "outputs": [
-      {"internalType": "bool", "name": "exists", "type": "bool"},
-      {"internalType": "bool", "name": "isRecalled", "type": "bool"},
-      {"internalType": "bool", "name": "isFlagged", "type": "bool"},
-      {"internalType": "bool", "name": "isExpired", "type": "bool"},
-      {"internalType": "string", "name": "status", "type": "string"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getFlaggedBatches",
-    "outputs": [{"internalType": "uint256[]", "name": "", "type": "uint256[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getRecalledBatches",
-    "outputs": [{"internalType": "uint256[]", "name": "", "type": "uint256[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getSystemStats",
-    "outputs": [
-      {"internalType": "uint256", "name": "totalUsers", "type": "uint256"},
-      {"internalType": "uint256", "name": "totalPrescriptions", "type": "uint256"},
-      {"internalType": "uint256", "name": "totalBatches", "type": "uint256"},
-      {"internalType": "uint256", "name": "dispensedCount", "type": "uint256"},
-      {"internalType": "uint256", "name": "flaggedCount", "type": "uint256"},
-      {"internalType": "uint256", "name": "recalledCount", "type": "uint256"}
-    ],
-    "stateMutability": "view",
+    "name": "verifyUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

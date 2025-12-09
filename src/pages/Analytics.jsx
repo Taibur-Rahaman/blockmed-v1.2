@@ -12,8 +12,6 @@ import {
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
-import { CONTRACT_ADDRESS } from '../utils/config'
-import contractABI from '../utils/contractABI.json'
 import { formatNumber } from '../utils/helpers'
 
 const COLORS = ['#22c55e', '#3b82f6', '#eab308', '#ef4444', '#8b5cf6', '#f97316']
@@ -37,21 +35,44 @@ const Analytics = () => {
   }, [])
 
   const loadAnalytics = async () => {
-    if (!window.ethereum) return
-
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
+      const { getReadContract, isBlockchainReady } = await import('../utils/contractHelper')
+      
+      // Check if blockchain is ready
+      const ready = await isBlockchainReady()
+      if (!ready.ready) {
+        console.warn('Blockchain not ready:', ready.error)
+        setLoading(false)
+        return
+      }
 
-      const systemStats = await contract.getSystemStats()
-      setStats({
-        totalUsers: Number(systemStats[0]),
-        totalPrescriptions: Number(systemStats[1]),
-        totalBatches: Number(systemStats[2]),
-        dispensedCount: Number(systemStats[3]),
-        flaggedCount: Number(systemStats[4]),
-        recalledCount: Number(systemStats[5]),
-      })
+      const contract = await getReadContract()
+
+      // Try to get system stats, fallback to individual calls if method doesn't exist
+      try {
+        const systemStats = await contract.getSystemStats()
+        setStats({
+          totalUsers: Number(systemStats[0]),
+          totalPrescriptions: Number(systemStats[1]),
+          totalBatches: Number(systemStats[2]),
+          dispensedCount: Number(systemStats[3]),
+          flaggedCount: Number(systemStats[4]),
+          recalledCount: Number(systemStats[5]),
+        })
+      } catch (e) {
+        // Fallback: get individual stats
+        const prescriptionCount = await contract.prescriptionCount()
+        const batchCount = await contract.batchCount()
+        
+        setStats({
+          totalUsers: 0,
+          totalPrescriptions: Number(prescriptionCount),
+          totalBatches: Number(batchCount),
+          dispensedCount: 0,
+          flaggedCount: 0,
+          recalledCount: 0,
+        })
+      }
     } catch (error) {
       console.error('Error loading analytics:', error)
     } finally {

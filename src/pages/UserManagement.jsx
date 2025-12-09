@@ -33,7 +33,7 @@ const UserManagement = () => {
 
     setLoading(true)
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
 
       const userAddresses = await contract.getAllUsers()
@@ -80,7 +80,7 @@ const UserManagement = () => {
     setProcessingUser(userAddress)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
 
@@ -106,7 +106,7 @@ const UserManagement = () => {
     setProcessingUser(userAddress)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
+  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
 

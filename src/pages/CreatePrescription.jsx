@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 import { 
   FiUser, FiCalendar, FiHeart, FiPlus, FiTrash2, FiPrinter,
   FiCheck, FiCopy, FiArrowLeft, FiArrowRight, FiSearch,
-  FiPackage, FiClipboard, FiAlertCircle, FiRefreshCw
+  FiPackage, FiClipboard, FiAlertCircle, FiRefreshCw, FiHash
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
@@ -20,6 +20,7 @@ import contractABI from '../utils/contractABI.json'
 import { 
   calculateAge, generatePatientHash, copyToClipboard, formatDate 
 } from '../utils/helpers'
+import { getWriteContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
 import staticMedicines from '../data/medicines.json'
 
 const CreatePrescription = () => {
@@ -189,6 +190,11 @@ const CreatePrescription = () => {
       toast.error('Patient name is required')
       return
     }
+    
+    if (!patient.nid || !patient.nid.trim()) {
+      toast.error('NID (National ID) is required for patient tracking')
+      return
+    }
 
     const hash = generatePatientHash(patient)
     const prescriptionData = {
@@ -231,18 +237,36 @@ const CreatePrescription = () => {
     setIsSubmitting(true)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
+      // Check if blockchain is ready
+      const ready = await isBlockchainReady()
+      if (!ready.ready) {
+        toast.error(`Blockchain not ready: ${ready.error}\n\nPlease connect a wallet or enable Dev Mode.`)
+        setIsSubmitting(false)
+        return
+      }
 
+      // Get current account (works with both Dev Mode and Wallet)
+      const currentAccount = await getCurrentAccount()
+      if (!currentAccount) {
+        toast.error('No account connected. Please connect a wallet or enable Dev Mode.')
+        setIsSubmitting(false)
+        return
+      }
+
+      // Get contract instance (automatically uses Dev Mode or Wallet)
+      const contract = await getWriteContract()
+
+      toast.loading('Submitting to blockchain...')
+      
       // Use legacy addPrescription function (auto-registers user as doctor)
       const tx = await contract.addPrescription(
         patientHash,
         ipfsHash
       )
 
-      toast.loading('Submitting to blockchain...')
+      console.log('⏳ Transaction sent:', tx.hash)
       const receipt = await tx.wait()
+      console.log('✅ Transaction confirmed in block:', receipt.blockNumber)
       
       // Get prescription ID
       const count = await contract.prescriptionCount()
@@ -254,7 +278,7 @@ const CreatePrescription = () => {
         qrData: JSON.stringify({
           prescriptionId: newId,
           patientHash,
-          doctor: account,
+          doctor: currentAccount,
         }),
         prescriptionId: newId,
         txHash: tx.hash,
@@ -264,7 +288,21 @@ const CreatePrescription = () => {
       toast.success(`Prescription #${newId} created on blockchain!`)
     } catch (error) {
       console.error('Submission error:', error)
-      toast.error(error.reason || error.message || 'Failed to submit')
+      
+      // Better error messages
+      let errorMessage = 'Failed to submit prescription'
+      
+      if (error.message?.includes('Not connected') || error.message?.includes('could not coalesce')) {
+        errorMessage = 'Not connected to blockchain. Please:\n1. Make sure Hardhat is running (npm run blockchain)\n2. Connect a wallet or enable Dev Mode'
+      } else if (error.message?.includes('user rejected')) {
+        errorMessage = 'Transaction was rejected'
+      } else if (error.reason) {
+        errorMessage = error.reason
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -494,7 +532,7 @@ const CreatePrescription = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return patient.name.trim().length > 0
+        return patient.name.trim().length > 0 && patient.nid && patient.nid.trim().length > 0
       case 2:
         return symptoms.trim().length > 0
       case 3:
@@ -570,6 +608,30 @@ const CreatePrescription = () => {
                     value={patient.name}
                     onChange={(e) => setPatient('name', e.target.value)}
                   />
+                </div>
+
+                {/* NID (National ID) - Unique Identifier */}
+                <div className="form-group md:col-span-2">
+                  <label className="form-label flex items-center gap-2">
+                    <FiHash size={14} />
+                    NID (National ID) *
+                    <span className="text-xs text-gray-400 font-normal">
+                      {language === 'en' ? '(Unique patient identifier)' : '(অনন্য রোগী শনাক্তকারী)'}
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={language === 'en' ? 'Enter NID number (e.g., 1234567890123)' : 'NID নম্বর লিখুন'}
+                    value={patient.nid}
+                    onChange={(e) => setPatient('nid', e.target.value)}
+                    maxLength={17}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {language === 'en' 
+                      ? 'This NID will be used to track patient history across all prescriptions'
+                      : 'এই NID ব্যবহার করে রোগীর সকল প্রেসক্রিপশনের ইতিহাস দেখা যাবে'}
+                  </p>
                 </div>
 
                 {/* Date of Birth */}

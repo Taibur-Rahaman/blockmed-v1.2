@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+.DS_Store
+artifacts
+cache
+typechain-types
+scripts
+contracts
+hardhat.config.*
+.git
+.vscode
+.idea

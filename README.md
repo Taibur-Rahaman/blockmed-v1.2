@@ -233,6 +233,49 @@ BlockMed V1.1/
 
 ---
 
+## 🚀 Deploy to Vercel
+
+### Quick Deploy
+
+1. **Push to GitHub**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/Taibur-Rahaman/blockmed-v1.2.git
+   git push -u origin main
+   ```
+
+2. **Import to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Vercel will auto-detect Vite settings
+
+3. **Configure Environment Variables**
+   - In Vercel project settings, go to "Environment Variables"
+   - Add: `VITE_CONTRACT_ADDRESS` = `your_contract_address`
+   - Redeploy after adding variables
+
+4. **Deploy**
+   - Vercel will automatically build and deploy
+   - Your app will be live at `https://your-project.vercel.app`
+
+### Manual Configuration
+
+If auto-detection doesn't work, configure in Vercel dashboard:
+- **Framework Preset**: Vite
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Install Command**: `npm install`
+
+### Environment Variables
+
+Set these in Vercel:
+- `VITE_CONTRACT_ADDRESS` - Your deployed smart contract address
+
+---
+
 ## 🚀 Next Steps (Phase 3)
 
 - [ ] Add patient dashboard

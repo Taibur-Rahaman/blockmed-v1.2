@@ -5,8 +5,19 @@ import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { FiGlobe, FiShield, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { DEFAULT_NETWORK, NETWORKS, CONTRACT_ADDRESS, ROLES } from '../utils/config'
+import { DEFAULT_NETWORK, CONTRACT_ADDRESS, ROLES } from '../utils/config'
 import contractABI from '../utils/contractABI.json'
+import { 
+  DEV_ACCOUNTS, 
+  isDevMode, 
+  enableDevMode, 
+  disableDevMode, 
+  getDevAccount,
+  getDevBalance,
+  testHardhatConnection,
+  initDevMode
+} from '../utils/devMode'
+import { getProvider, getSigner, getReadContract, getWriteContract } from '../utils/contractHelper'
 
 const LoginPage = () => {
   const { t } = useTranslation()
@@ -20,40 +31,77 @@ const LoginPage = () => {
     licenseNumber: '',
     role: ROLES.DOCTOR,
   })
+  
+  // Dev Mode State
+  const [devModeActive, setDevModeActive] = useState(false)
+  const [selectedDevAccount, setSelectedDevAccount] = useState(0)
+  const [hardhatRunning, setHardhatRunning] = useState(false)
+  const [showDevPanel, setShowDevPanel] = useState(false)
 
-  // Check existing connection (but not if user explicitly logged out)
+  // Check existing connection
   useEffect(() => {
-    // Don't auto-connect if user explicitly logged out
-    if (wasLoggedOut()) {
-      return
+    const init = async () => {
+      // Check Hardhat status
+      const running = await testHardhatConnection()
+      setHardhatRunning(running)
+      
+      // Check if dev mode was active
+      const wasDevMode = initDevMode()
+      if (wasDevMode && running) {
+        setDevModeActive(true)
+        const devAcc = getDevAccount()
+        if (devAcc) {
+          await handleAccountConnected(devAcc.address, true)
+        }
+        return
+      }
+      
+      // Don't auto-connect if user explicitly logged out
+      if (wasLoggedOut()) {
+        return
+      }
+      checkExistingConnection()
     }
-    checkExistingConnection()
+    init()
   }, [])
 
   const checkExistingConnection = async () => {
+    // Check Dev Mode first - don't call window.ethereum if Dev Mode is active
+    const { isDevMode, getDevAccount } = await import('../utils/devMode')
+    if (isDevMode()) {
+      const devAcc = getDevAccount()
+      if (devAcc?.address) {
+        await handleAccountConnected(devAcc.address, true)
+        return
+      }
+    }
+    
+    // Only check wallet if Dev Mode is not active
     if (!window.ethereum) return
     
     try {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' })
       if (accounts.length > 0) {
-        await handleAccountConnected(accounts[0])
+        await handleAccountConnected(accounts[0], false)
       }
     } catch (error) {
       console.error('Error checking connection:', error)
     }
   }
 
-  const handleAccountConnected = async (account) => {
+  const handleAccountConnected = async (account, isDevModeConnection = false) => {
     setAccount(account)
     
-    // Check chain and get user info
     try {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-      setNetwork(DEFAULT_NETWORK.chainName, chainId)
+      if (isDevModeConnection) {
+        setNetwork('Hardhat Local (Dev Mode)', '0x7a69')
+      } else if (window.ethereum) {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+        setNetwork(DEFAULT_NETWORK.chainName, chainId)
+      }
       
       // Get user info from contract
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
+      const contract = await getReadContract()
       
       try {
         const userInfo = await contract.getUser(account)
@@ -68,11 +116,9 @@ const LoginPage = () => {
             registeredAt: Number(userInfo.registeredAt),
           })
         } else {
-          // User not registered - show registration
           setShowRegister(true)
         }
       } catch (err) {
-        // Contract might not have user, show register
         console.log('User not found, showing registration')
         setShowRegister(true)
       }
@@ -81,35 +127,63 @@ const LoginPage = () => {
     }
   }
 
+  // Enable Dev Mode
+  const handleEnableDevMode = async (accountIndex = 0) => {
+    setIsConnecting(true)
+    clearLogoutFlag()
+    
+    try {
+      const result = await enableDevMode(accountIndex)
+      if (result.success) {
+        setDevModeActive(true)
+        setSelectedDevAccount(accountIndex)
+        await handleAccountConnected(result.account.address, true)
+        toast.success(`Dev Mode: ${result.account.name}`)
+      } else {
+        toast.error(result.error)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  // Disable Dev Mode
+  const handleDisableDevMode = () => {
+    disableDevMode()
+    setDevModeActive(false)
+    setAccount(null)
+    setUser(null)
+    setShowDevPanel(false)
+  }
+
+  // Normal wallet connection
   const connectWallet = async () => {
     if (!window.ethereum) {
-      toast.error('Please install MetaMask!')
-      window.open('https://metamask.io/download/', '_blank')
+      toast.error('Please install MetaMask or use Dev Mode!')
       return
     }
 
     setIsConnecting(true)
-    // Clear logout flag when user manually connects
     clearLogoutFlag()
 
     try {
-      // Request account access
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
       })
 
       if (accounts.length > 0) {
-        // Switch to correct network
         await switchNetwork()
-        await handleAccountConnected(accounts[0])
-        toast.success('Wallet connected successfully!')
+        await handleAccountConnected(accounts[0], false)
+        toast.success('Wallet connected!')
       }
     } catch (error) {
       console.error('Connection error:', error)
       if (error.code === 4001) {
-        toast.error('Connection rejected by user')
+        toast.error('Connection rejected')
       } else {
-        toast.error('Failed to connect wallet')
+        toast.error('Failed to connect. Try Dev Mode!')
       }
     } finally {
       setIsConnecting(false)
@@ -145,9 +219,7 @@ const LoginPage = () => {
     setIsRegistering(true)
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
+      const contract = await getWriteContract()
 
       const tx = await contract.registerUser(
         registerData.name,
@@ -159,7 +231,7 @@ const LoginPage = () => {
       await tx.wait()
       
       toast.dismiss()
-      toast.success('Registration successful! Awaiting admin verification.')
+      toast.success('Registration successful!')
       
       setUser({
         name: registerData.name,
@@ -172,7 +244,7 @@ const LoginPage = () => {
       setShowRegister(false)
     } catch (error) {
       console.error('Registration error:', error)
-      toast.error(error.message || 'Registration failed')
+      toast.error(error.reason || error.message || 'Registration failed')
     } finally {
       setIsRegistering(false)
     }
@@ -193,8 +265,109 @@ const LoginPage = () => {
     { value: ROLES.REGULATOR, label: 'Regulator (DGDA)', labelBn: 'নিয়ন্ত্রক (ডিজিডিএ)' },
   ]
 
+  // Get role color
+  const getRoleColor = (role) => {
+    const colors = {
+      ADMIN: '#ef4444',
+      DOCTOR: '#22c55e',
+      PHARMACIST: '#3b82f6',
+      MANUFACTURER: '#eab308',
+      PATIENT: '#a855f7',
+      REGULATOR: '#f97316'
+    }
+    return colors[role] || '#6b7280'
+  }
+
+  // Dev Mode Account Selection Panel
+  const DevModePanel = () => (
+    <>
+      <div 
+        onClick={() => setShowDevPanel(false)}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          zIndex: 999
+        }}
+      />
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+        border: '1px solid rgba(139, 92, 246, 0.3)',
+        zIndex: 1000,
+        minWidth: '400px',
+        maxWidth: '500px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ color: '#fff', margin: 0, fontSize: '18px' }}>🔧 Select Dev Account</h3>
+          <button 
+            onClick={() => setShowDevPanel(false)}
+            style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '20px', cursor: 'pointer' }}
+          >
+            ✕
+          </button>
+        </div>
+        
+        <p style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '16px' }}>
+          Each account has 10,000 ETH for free testing!
+        </p>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {DEV_ACCOUNTS.map((acc, index) => (
+            <button
+              key={acc.address}
+              onClick={() => {
+                setShowDevPanel(false)
+                handleEnableDevMode(index)
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ color: '#fff', fontWeight: '600', fontSize: '14px' }}>{acc.name}</div>
+                <div style={{ color: '#6b7280', fontSize: '11px', fontFamily: 'monospace' }}>
+                  {acc.address.substring(0, 10)}...{acc.address.substring(38)}
+                </div>
+              </div>
+              <span style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: '600',
+                background: getRoleColor(acc.role),
+                color: '#fff'
+              }}>
+                {acc.role}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative">
+      {showDevPanel && <DevModePanel />}
+      
       {/* Language Toggle */}
       <button
         onClick={toggleLanguage}
@@ -263,50 +436,104 @@ const LoginPage = () => {
           <div className="glass-card p-8 max-w-md mx-auto">
             {!showRegister ? (
               <>
-                <div className="text-center mb-8">
+                <div className="text-center mb-6">
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary-500/20 to-accent-500/20 flex items-center justify-center">
                     <FiShield size={40} className="text-primary-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    {t('auth.connectWallet')}
+                    {language === 'en' ? 'Get Started' : 'শুরু করুন'}
                   </h3>
-                  <p className="text-gray-400">
-                    {language === 'en'
-                      ? 'Connect your MetaMask wallet to access BlockMed'
-                      : 'BlockMed অ্যাক্সেস করতে আপনার MetaMask ওয়ালেট সংযুক্ত করুন'}
-                  </p>
                 </div>
 
+                {/* Hardhat Status */}
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: hardhatRunning ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  border: `1px solid ${hardhatRunning ? '#22c55e' : '#ef4444'}`,
+                  fontSize: '13px',
+                  color: hardhatRunning ? '#22c55e' : '#ef4444',
+                  textAlign: 'center'
+                }}>
+                  {hardhatRunning ? '✅ Hardhat Running - Ready!' : '❌ Hardhat Not Running'}
+                  {!hardhatRunning && (
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
+                      Run: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npx hardhat node</code>
+                    </div>
+                  )}
+                </div>
+
+                {/* Dev Mode Button - PRIMARY */}
+                <button
+                  onClick={() => setShowDevPanel(true)}
+                  disabled={isConnecting || !hardhatRunning}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: hardhatRunning 
+                      ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' 
+                      : 'rgba(107, 114, 128, 0.3)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    cursor: hardhatRunning ? 'pointer' : 'not-allowed',
+                    marginBottom: '8px',
+                    boxShadow: hardhatRunning ? '0 4px 20px rgba(139, 92, 246, 0.4)' : 'none'
+                  }}
+                >
+                  {isConnecting ? '⏳ Connecting...' : '🔧 Dev Mode (No Wallet Needed)'}
+                </button>
+                
+                <p style={{ color: '#22c55e', fontSize: '12px', marginBottom: '20px', textAlign: 'center' }}>
+                  ✨ Free transactions! Pre-funded accounts!
+                </p>
+
+                {/* Divider */}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  margin: '20px 0',
+                  color: '#6b7280',
+                  fontSize: '12px'
+                }}>
+                  <div style={{ flex: 1, height: '1px', background: '#374151' }} />
+                  <span style={{ padding: '0 12px' }}>or use wallet</span>
+                  <div style={{ flex: 1, height: '1px', background: '#374151' }} />
+                </div>
+
+                {/* Wallet Connect Button */}
                 <button
                   onClick={connectWallet}
                   disabled={isConnecting}
-                  className="btn-primary w-full text-lg py-4 mb-4"
+                  className="btn-secondary w-full"
                 >
                   {isConnecting ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="loader w-5 h-5" />
-                      {t('auth.connecting')}
+                      Connecting...
                     </span>
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       <span>🦊</span>
-                      {t('auth.connectWallet')}
+                      Connect MetaMask/Frame
                     </span>
                   )}
                 </button>
 
                 {!window.ethereum && (
-                  <div className="alert alert-warning text-sm">
-                    <FiAlertCircle size={18} />
-                    <span>{t('auth.metamaskRequired')}</span>
-                  </div>
+                  <p style={{ marginTop: '10px', color: '#6b7280', fontSize: '11px', textAlign: 'center' }}>
+                    No wallet? Use Dev Mode above!
+                  </p>
                 )}
 
                 <div className="mt-6 pt-6 border-t border-white/10 text-center">
                   <p className="text-sm text-gray-400">
                     {language === 'en'
-                      ? 'Supported networks: Hardhat Local, Polygon Mumbai'
-                      : 'সমর্থিত নেটওয়ার্ক: Hardhat Local, Polygon Mumbai'}
+                      ? 'Network: Hardhat Local (Free)'
+                      : 'নেটওয়ার্ক: Hardhat Local (বিনামূল্যে)'}
                   </p>
                 </div>
               </>
@@ -408,4 +635,3 @@ const LoginPage = () => {
 }
 
 export default LoginPage
-
