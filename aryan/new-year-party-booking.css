@@ -1,0 +1,610 @@
+/**
+ * New Year Party Seat Booking - Custom Styles
+ * Version: 1.0.0
+ */
+
+/* ============================================
+   Main Container & Layout
+   ============================================ */
+
+.ny-party-booking-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.ny-party-header {
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ny-party-title-wrapper {
+    position: relative;
+}
+
+.ny-party-title {
+    font-size: 3.5em;
+    font-weight: 700;
+    background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.ny-party-subtitle {
+    font-size: 1.5em;
+    color: #333;
+    margin: 10px 0;
+    font-weight: 300;
+}
+
+.ny-party-date {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #555;
+}
+
+.ny-date-icon {
+    font-size: 1.5em;
+}
+
+/* ============================================
+   Booking Wrapper
+   ============================================ */
+
+.ny-booking-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+@media (max-width: 1024px) {
+    .ny-booking-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   Seat Selection Section
+   ============================================ */
+
+.ny-seat-selection-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ny-section-title {
+    font-size: 2em;
+    color: #333;
+    margin: 0 0 10px 0;
+    text-align: center;
+}
+
+.ny-section-description {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.1em;
+}
+
+/* ============================================
+   Seat Map
+   ============================================ */
+
+.ny-seat-map-container {
+    position: relative;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+.ny-stage-indicator {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.ny-stage-label {
+    font-size: 1.5em;
+    font-weight: 700;
+    letter-spacing: 3px;
+}
+
+.ny-seat-section {
+    margin-bottom: 40px;
+}
+
+.ny-seat-section:last-child {
+    margin-bottom: 0;
+}
+
+.ny-section-name {
+    font-size: 1.3em;
+    color: #333;
+    margin: 0 0 15px 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+.ny-section-price {
+    text-align: center;
+    font-size: 1.1em;
+    color: #667eea;
+    font-weight: 600;
+    margin-top: 15px;
+}
+
+.ny-seat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 10px;
+    justify-content: center;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Individual Seats
+   ============================================ */
+
+.ny-seat {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    border: 2px solid transparent;
+    font-size: 0.7em;
+    font-weight: 600;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.ny-seat-label {
+    position: relative;
+    z-index: 1;
+}
+
+/* VIP Seats */
+.ny-seat-vip {
+    background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+    box-shadow: 0 4px 15px rgba(254, 202, 87, 0.4);
+}
+
+.ny-seat-vip:hover:not(.ny-seat-occupied):not(.ny-seat-selected) {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(254, 202, 87, 0.6);
+    border-color: #feca57;
+}
+
+/* Standard Seats */
+.ny-seat-standard {
+    background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
+    box-shadow: 0 4px 15px rgba(72, 219, 251, 0.4);
+}
+
+.ny-seat-standard:hover:not(.ny-seat-occupied):not(.ny-seat-selected) {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(72, 219, 251, 0.6);
+    border-color: #48dbfb;
+}
+
+/* Economy Seats */
+.ny-seat-economy {
+    background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+    box-shadow: 0 4px 15px rgba(85, 239, 196, 0.4);
+}
+
+.ny-seat-economy:hover:not(.ny-seat-occupied):not(.ny-seat-selected) {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(85, 239, 196, 0.6);
+    border-color: #55efc4;
+}
+
+/* Selected State */
+.ny-seat-selected {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%) !important;
+    border-color: #ff6b6b !important;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.8) !important;
+    transform: scale(1.05);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.8); }
+    50% { box-shadow: 0 0 30px rgba(255, 107, 107, 1); }
+}
+
+/* Occupied State */
+.ny-seat-occupied {
+    background: #95a5a6 !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+    position: relative;
+}
+
+.ny-seat-occupied::after {
+    content: '✕';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+/* ============================================
+   Seat Legend
+   ============================================ */
+
+.ny-seat-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.ny-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.ny-legend-seat {
+    width: 30px;
+    height: 30px;
+    cursor: default;
+}
+
+/* ============================================
+   Booking Sidebar
+   ============================================ */
+
+.ny-booking-sidebar {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+
+.ny-booking-summary {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ny-summary-title {
+    font-size: 1.8em;
+    color: #333;
+    margin: 0 0 20px 0;
+    text-align: center;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 15px;
+}
+
+.ny-selected-seats-list {
+    min-height: 150px;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.ny-no-seats {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    margin: 0;
+    padding: 20px;
+}
+
+.ny-seat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.ny-seat-item:last-child {
+    margin-bottom: 0;
+}
+
+.ny-seat-item-info {
+    flex: 1;
+}
+
+.ny-seat-item-id {
+    font-weight: 600;
+    color: #333;
+}
+
+.ny-seat-item-section {
+    font-size: 0.9em;
+    color: #666;
+    text-transform: capitalize;
+}
+
+.ny-seat-item-price {
+    font-weight: 600;
+    color: #667eea;
+    margin-left: 10px;
+}
+
+.ny-seat-item-remove {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.3s ease;
+}
+
+.ny-seat-item-remove:hover {
+    background: #c0392b;
+}
+
+/* ============================================
+   Booking Totals
+   ============================================ */
+
+.ny-booking-totals {
+    border-top: 2px solid #e0e0e0;
+    padding-top: 20px;
+    margin-bottom: 20px;
+}
+
+.ny-total-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.ny-total-item:last-child {
+    margin-bottom: 0;
+}
+
+.ny-total-label {
+    color: #666;
+}
+
+.ny-total-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.ny-total-final {
+    border-top: 2px solid #667eea;
+    padding-top: 15px;
+    margin-top: 15px;
+    font-size: 1.3em;
+}
+
+.ny-total-final .ny-total-label,
+.ny-total-final .ny-total-value {
+    color: #667eea;
+    font-weight: 700;
+}
+
+/* ============================================
+   Proceed Button
+   ============================================ */
+
+.ny-proceed-btn {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.2em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.ny-proceed-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.ny-proceed-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* ============================================
+   Tickera Integration
+   ============================================ */
+
+.ny-tickera-checkout {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.ny-tickera-notice {
+    padding: 20px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    color: #856404;
+}
+
+.ny-tickera-notice code {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+/* ============================================
+   Party Details Section
+   ============================================ */
+
+.ny-party-details {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ny-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+.ny-detail-card {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.ny-detail-card:hover {
+    transform: translateY(-5px);
+}
+
+.ny-detail-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+}
+
+.ny-detail-card h4 {
+    font-size: 1.3em;
+    color: #333;
+    margin: 0 0 10px 0;
+}
+
+.ny-detail-card p {
+    color: #666;
+    margin: 0;
+    font-size: 1em;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .ny-party-title {
+        font-size: 2em;
+    }
+
+    .ny-party-subtitle {
+        font-size: 1.2em;
+    }
+
+    .ny-seat-grid {
+        grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+        gap: 8px;
+    }
+
+    .ny-seat {
+        font-size: 0.6em;
+    }
+
+    .ny-booking-sidebar {
+        position: relative;
+        top: 0;
+    }
+
+    .ny-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   Loading & Animation States
+   ============================================ */
+
+.ny-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success Message */
+.ny-success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #c3e6cb;
+}
+
+/* Error Message */
+.ny-error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #f5c6cb;
+}

@@ -16,7 +16,11 @@
 |------|---------|-------------|
 | **[QUICK_START.md](./QUICK_START.md)** | 5-minute setup guide | **Start here!** Get running fast |
 | **[README.md](./README.md)** | Complete overview | Full project documentation |
+| **[WEEKLY_UPDATES.md](./WEEKLY_UPDATES.md)** | Weekly feature updates | See what's new |
+| **[TEAM_UPDATE_SUPERVISOR.md](./TEAM_UPDATE_SUPERVISOR.md)** | Supervisor summary | For supervisor review |
+| **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** | Admin portal guide | Super admin features |
 | **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Detailed deployment steps | Troubleshooting & production |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues & fixes | When something breaks |
 | **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** | 22 test cases | Before your demo |
 | **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** | Project overview | Understanding the system |
 | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Technical architecture | Deep dive into design |
@@ -112,10 +116,12 @@ BlockMed V1.1/
 - ✅ Deployment scripts
 
 ### Documentation
-- ✅ 6 comprehensive guides
+- ✅ 10+ comprehensive guides
+- ✅ Weekly updates documentation
 - ✅ Testing checklist (22 tests)
 - ✅ Architecture diagrams
-- ✅ Demo script
+- ✅ Troubleshooting guide
+- ✅ Supervisor updates
 
 ---
 

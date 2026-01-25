@@ -10,6 +10,28 @@ Blockchain-based prescription management system with MetaMask integration and QR
 ✅ **Doctor Dashboard** - Clean, professional UI  
 ✅ **Activity Log** - Complete audit trail of all blockchain events  
 ✅ **Prescription Templates** - Save and reuse common prescription patterns  
+✅ **Super Admin Portal** - Real-time user monitoring and access control
+
+---
+
+## 📚 Documentation
+
+### Main Documentation
+- **[README.md](./README.md)** - This file (setup and overview)
+- **[WEEKLY_UPDATES.md](./WEEKLY_UPDATES.md)** - Consolidated weekly feature updates
+- **[TEAM_UPDATE_SUPERVISOR.md](./TEAM_UPDATE_SUPERVISOR.md)** - Summary for supervisors
+- **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** - Complete Super Admin Portal guide
+
+### System Guides
+- **[BLOCKMED_V2_GUIDE.md](./BLOCKMED_V2_GUIDE.md)** - Complete system guide
+- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - Project overview
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture
+
+### Setup & Deployment
+- **[QUICK_START.md](./QUICK_START.md)** - Quick setup guide
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Deployment instructions
+- **[WALLET_SETUP.md](./WALLET_SETUP.md)** - Wallet configuration
+- **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** - Testing guide  
 
 ---
 
