@@ -239,6 +239,79 @@ export const hasPermission = (userRole, requiredRoles) => {
 }
 
 // ============================================
+// User Restriction Helpers
+// ============================================
+
+/**
+ * Check if a user is restricted
+ * @param {string} userAddress - User's wallet address
+ * @returns {object|null} - Restriction object or null
+ */
+export const getUserRestriction = (userAddress) => {
+  if (!userAddress) return null
+  
+  try {
+    const stored = localStorage.getItem('blockmed-user-restrictions')
+    if (!stored) return null
+    
+    const restrictions = JSON.parse(stored)
+    const restriction = restrictions[userAddress]
+    if (!restriction) return null
+
+    const now = Date.now()
+    const expiresAt = restriction.expiresAt
+
+    // Check if restriction is expired
+    if (restriction.restrictionType === 'temporary' && expiresAt && now > expiresAt) {
+      // Auto-remove expired restrictions
+      const newRestrictions = { ...restrictions }
+      delete newRestrictions[userAddress]
+      localStorage.setItem('blockmed-user-restrictions', JSON.stringify(newRestrictions))
+      return null
+    }
+
+    return restriction
+  } catch (error) {
+    console.error('Error checking user restriction:', error)
+    return null
+  }
+}
+
+/**
+ * Check if user is restricted
+ * @param {string} userAddress - User's wallet address
+ * @returns {boolean} - True if user is restricted
+ */
+export const isUserRestricted = (userAddress) => {
+  return getUserRestriction(userAddress) !== null
+}
+
+/**
+ * Check if user has access to a feature
+ * @param {string} userAddress - User's wallet address
+ * @param {string} feature - Feature name (canCreatePrescription, canDispense, etc.)
+ * @returns {boolean} - True if user has access
+ */
+export const hasFeatureAccess = (userAddress, feature) => {
+  if (!userAddress) return false
+  
+  try {
+    const stored = localStorage.getItem('blockmed-access-controls')
+    if (!stored) return true // Default: allow access
+    
+    const accessControls = JSON.parse(stored)
+    const controls = accessControls[userAddress]
+    
+    if (!controls) return true // No restrictions: allow access
+    
+    return controls[feature] !== false // Allow if not explicitly disabled
+  } catch (error) {
+    console.error('Error checking feature access:', error)
+    return true // Default: allow access on error
+  }
+}
+
+// ============================================
 // Prescription Status Helpers
 // ============================================
 

@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { FiX } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -10,7 +11,8 @@ import toast from 'react-hot-toast'
 import { 
   FiUser, FiCalendar, FiHeart, FiPlus, FiTrash2, FiPrinter,
   FiCheck, FiCopy, FiArrowLeft, FiArrowRight, FiSearch,
-  FiPackage, FiClipboard, FiAlertCircle, FiRefreshCw, FiHash
+  FiPackage, FiClipboard, FiAlertCircle, FiRefreshCw, FiHash,
+  FiLayers, FiSave
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
@@ -18,7 +20,8 @@ import { usePrescriptionStore } from '../store/useStore'
 import { CONTRACT_ADDRESS, GENDER_OPTIONS, VALIDITY_OPTIONS, API } from '../utils/config'
 import contractABI from '../utils/contractABI.json'
 import { 
-  calculateAge, generatePatientHash, copyToClipboard, formatDate 
+  calculateAge, generatePatientHash, copyToClipboard, formatDate,
+  isUserRestricted, getUserRestriction
 } from '../utils/helpers'
 import { getWriteContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
 import staticMedicines from '../data/medicines.json'
@@ -26,9 +29,12 @@ import staticMedicines from '../data/medicines.json'
 const CreatePrescription = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { account, language } = useStore()
+  const { account, language, logout } = useStore()
   const prescriptionStore = usePrescriptionStore()
   const printRef = useRef()
+  
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [templates, setTemplates] = useState([])
 
   // Local state
   const [currentStep, setCurrentStep] = useState(1)
@@ -72,6 +78,102 @@ const CreatePrescription = () => {
       dateOfBirth: date,
       age: age.toString(),
     })
+  }
+
+  // Check if user is restricted and access controls
+  useEffect(() => {
+    if (account) {
+      // Check restriction
+      if (isUserRestricted(account)) {
+        const restriction = getUserRestriction(account)
+        toast.error(
+          `Your account is restricted. ${restriction?.reason || 'Please contact administrator.'}`,
+          { duration: 10000 }
+        )
+        navigate('/')
+        return
+      }
+
+      // Check access controls
+      try {
+        const stored = localStorage.getItem('blockmed-access-controls') || '{}'
+        const accessControls = JSON.parse(stored)
+        const controls = accessControls[account]
+        
+        if (controls && !controls.canCreatePrescription) {
+          toast.error('You do not have permission to create prescriptions. Please contact administrator.', { duration: 10000 })
+          navigate('/')
+        }
+      } catch (error) {
+        console.error('Error checking access controls:', error)
+      }
+
+      // Check force logout
+      if (sessionStorage.getItem(`blockmed-force-logout-${account}`) === 'true') {
+        toast.error('Your session has been terminated by administrator.', { duration: 10000 })
+        sessionStorage.removeItem(`blockmed-force-logout-${account}`)
+        // Clear and logout
+        logout()
+        navigate('/')
+      }
+    }
+  }, [account, navigate])
+
+  // Load templates
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('blockmed-prescription-templates')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        setTemplates(Array.isArray(parsed) ? parsed : [])
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error)
+    }
+  }, [])
+
+  // Save current prescription as template
+  const handleSaveAsTemplate = () => {
+    if (medicines.length === 0) {
+      toast.error('Please add at least one medicine before saving as template')
+      return
+    }
+    // Navigate to templates page with current data
+    const templateData = {
+      symptoms,
+      diagnosis,
+      medicines,
+      tests,
+      advice,
+      followUp,
+      validityDays
+    }
+    sessionStorage.setItem('blockmed-template-draft', JSON.stringify(templateData))
+    navigate('/templates?action=create')
+  }
+
+  // Apply template
+  const handleApplyTemplate = (template) => {
+    if (template.symptoms) setSymptoms(template.symptoms)
+    if (template.diagnosis) setDiagnosis(template.diagnosis)
+    if (template.tests) setTests(template.tests)
+    if (template.advice) setAdvice(template.advice)
+    if (template.followUp) setFollowUp(template.followUp)
+    if (template.validityDays) setValidityDays(template.validityDays)
+    
+    // Clear existing medicines and add template medicines
+    medicines.forEach(med => {
+      removeMedicine(med.id)
+    })
+    template.medicines.forEach(med => {
+      addMedicine({
+        ...med,
+        id: Date.now() + Math.random()
+      })
+    })
+    
+    setShowTemplateModal(false)
+    toast.success(`Template "${template.name}" applied successfully!`)
   }
 
   // Medicine search - Local BD medicines first, FDA API as backup
@@ -753,10 +855,30 @@ const CreatePrescription = () => {
           {/* Step 3: Medicines */}
           {currentStep === 3 && (
             <div className="card">
-              <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                <FiPackage className="text-primary-400" />
-                {t('prescription.medicines')}
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <FiPackage className="text-primary-400" />
+                  {t('prescription.medicines')}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowTemplateModal(true)}
+                    className="btn-secondary text-sm"
+                  >
+                    <FiLayers size={16} />
+                    Use Template
+                  </button>
+                  {medicines.length > 0 && (
+                    <button
+                      onClick={handleSaveAsTemplate}
+                      className="btn-secondary text-sm"
+                    >
+                      <FiSave size={16} />
+                      Save as Template
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* Medicine Search */}
               <div className="glass-card p-4 mb-6">
@@ -1130,6 +1252,106 @@ const CreatePrescription = () => {
           </div>
         </div>
       )}
+
+      {/* Template Selection Modal */}
+      <AnimatePresence>
+        {showTemplateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTemplateModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass rounded-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <FiLayers className="text-primary-400" />
+                  Select Template
+                </h2>
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="btn-icon"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+
+              {templates.length === 0 ? (
+                <div className="text-center py-12">
+                  <FiLayers size={48} className="mx-auto mb-4 text-gray-500" />
+                  <p className="text-gray-400 mb-4">No templates available</p>
+                  <button
+                    onClick={() => {
+                      setShowTemplateModal(false)
+                      navigate('/templates')
+                    }}
+                    className="btn-primary"
+                  >
+                    <FiPlus size={18} />
+                    Create Template
+                  </button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {templates.map((template) => (
+                    <motion.div
+                      key={template.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="card hover:bg-white/5 transition-colors cursor-pointer"
+                      onClick={() => handleApplyTemplate(template)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white mb-1">{template.name}</h3>
+                          {template.description && (
+                            <p className="text-sm text-gray-400 line-clamp-2">{template.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <FiPackage size={14} />
+                          {template.medicines?.length || 0} medicines
+                        </span>
+                        {template.diagnosis && (
+                          <span className="flex items-center gap-1">
+                            <FiHeart size={14} />
+                            {template.diagnosis.substring(0, 20)}...
+                          </span>
+                        )}
+                      </div>
+                      <button className="btn-primary w-full mt-4 text-sm">
+                        Apply Template
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <button
+                  onClick={() => {
+                    setShowTemplateModal(false)
+                    navigate('/templates')
+                  }}
+                  className="btn-secondary w-full"
+                >
+                  <FiPlus size={18} />
+                  Manage Templates
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

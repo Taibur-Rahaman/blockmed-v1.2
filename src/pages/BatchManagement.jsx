@@ -11,13 +11,31 @@ import {
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
+import { hasFeatureAccess, isUserRestricted } from '../utils/helpers'
 import { CONTRACT_ADDRESS } from '../utils/config'
 import contractABI from '../utils/contractABI.json'
 import { formatTimestamp, shortenAddress, isExpired, getBatchStatus } from '../utils/helpers'
+import { useNavigate } from 'react-router-dom'
 
 const BatchManagement = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { account, role } = useStore()
+
+  // Check access control
+  useEffect(() => {
+    if (account) {
+      if (isUserRestricted(account)) {
+        toast.error('Your account is restricted. You cannot access this feature.')
+        navigate('/')
+        return
+      }
+      if (!hasFeatureAccess(account, 'canCreateBatch')) {
+        toast.error('You do not have permission to create batches.')
+        navigate('/')
+      }
+    }
+  }, [account, navigate])
 
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 // Store
 import { useStore } from './store/useStore'
+import { isUserRestricted, getUserRestriction, hasFeatureAccess } from './utils/helpers'
 
 // Layout & Auth
 import Layout from './components/Layout'
@@ -21,6 +22,8 @@ import BatchManagement from './pages/BatchManagement'
 import UserManagement from './pages/UserManagement'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
+import ActivityLog from './pages/ActivityLog'
+import PrescriptionTemplates from './pages/PrescriptionTemplates'
 
 function App() {
   console.log('🎨 App component rendering...')
@@ -29,9 +32,28 @@ function App() {
   
   // Use hooks unconditionally (React rules) - must be called every render
   const { i18n } = useTranslation()
-  const { account, language, isOnline, setOnlineStatus } = useStore()
+  const { account, language, theme, isOnline, setOnlineStatus, logout } = useStore()
   
   console.log('✅ Hooks accessed, account:', account ? 'connected' : 'not connected', 'isInitialized:', isInitialized)
+
+  // Check if user is restricted or force-logged out
+  useEffect(() => {
+    if (account) {
+      // Check force logout
+      if (sessionStorage.getItem(`blockmed-force-logout-${account}`) === 'true') {
+        sessionStorage.removeItem(`blockmed-force-logout-${account}`)
+        logout()
+        window.location.href = '/'
+        return
+      }
+
+      // Check restriction
+      if (isUserRestricted(account)) {
+        const restriction = getUserRestriction(account)
+        console.warn('User is restricted:', restriction)
+      }
+    }
+  }, [account, logout])
 
   // Initialize app
   useEffect(() => {
@@ -63,6 +85,16 @@ function App() {
       console.error('Error changing language:', error)
     }
   }, [language, i18n])
+
+  // Update theme when store changes
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', theme)
+      document.body.classList.toggle('light-theme', theme === 'light')
+    } catch (error) {
+      console.error('Error changing theme:', error)
+    }
+  }, [theme])
 
   // Monitor online status
   useEffect(() => {
@@ -215,6 +247,8 @@ function App() {
                 <Route path="/users" element={<UserManagement />} />
                 {/* Analytics and Settings enabled */}
                 <Route path="/analytics" element={<Analytics />} />
+                <Route path="/activity" element={<ActivityLog />} />
+                <Route path="/templates" element={<PrescriptionTemplates />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

@@ -12,13 +12,31 @@ import {
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
-import { formatNumber } from '../utils/helpers'
+import { formatNumber, hasFeatureAccess, isUserRestricted } from '../utils/helpers'
+import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 
 const COLORS = ['#22c55e', '#3b82f6', '#eab308', '#ef4444', '#8b5cf6', '#f97316']
 
 const Analytics = () => {
   const { t } = useTranslation()
-  const { role } = useStore()
+  const navigate = useNavigate()
+  const { role, account } = useStore()
+
+  // Check access control
+  useEffect(() => {
+    if (account) {
+      if (isUserRestricted(account)) {
+        toast.error('Your account is restricted. You cannot access this feature.')
+        navigate('/')
+        return
+      }
+      if (!hasFeatureAccess(account, 'canViewAnalytics')) {
+        toast.error('You do not have permission to view analytics.')
+        navigate('/')
+      }
+    }
+  }, [account, navigate])
 
   const [stats, setStats] = useState({
     totalUsers: 0,

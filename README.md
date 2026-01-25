@@ -8,6 +8,8 @@ Blockchain-based prescription management system with MetaMask integration and QR
 ✅ **Blockchain Storage** - Store prescriptions on-chain  
 ✅ **QR Code Generation** - Instant QR codes for prescriptions  
 ✅ **Doctor Dashboard** - Clean, professional UI  
+✅ **Activity Log** - Complete audit trail of all blockchain events  
+✅ **Prescription Templates** - Save and reuse common prescription patterns  
 
 ---
 

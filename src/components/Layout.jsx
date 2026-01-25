@@ -2,24 +2,25 @@ import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  FiHome, FiFileText, FiCheckCircle, FiUsers, FiPackage, 
+import {
+  FiHome, FiFileText, FiCheckCircle, FiUsers, FiPackage,
   FiBox, FiPieChart, FiSettings, FiBell, FiMenu, FiX,
-  FiLogOut, FiGlobe, FiChevronDown, FiUser
+  FiLogOut, FiGlobe, FiChevronDown, FiUser, FiMoon, FiSun, FiActivity, FiLayers
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { shortenAddress, getRoleName, getRoleColorClass } from '../utils/helpers'
+import { shortenAddress, getRoleName, getRoleColorClass, hasFeatureAccess } from '../utils/helpers'
 import { disableDevMode } from '../utils/devMode'
 
 const Layout = ({ children }) => {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
-  const { 
-    account, user, role, logout, 
-    language, toggleLanguage, 
+  const {
+    account, user, role, logout,
+    language, toggleLanguage,
+    theme, toggleTheme,
     sidebarOpen, toggleSidebar,
-    notifications, unreadCount 
+    notifications, unreadCount
   } = useStore()
 
   const [showNotifications, setShowNotifications] = useState(false)
@@ -41,22 +42,32 @@ const Layout = ({ children }) => {
   }
 
   const navItems = [
-    { path: '/', icon: FiHome, label: t('nav.dashboard'), roles: [1, 2, 3, 4, 5, 6] },
-    { path: '/prescription/create', icon: FiFileText, label: t('nav.createPrescription'), roles: [1, 2] },
-    { path: '/pharmacy', icon: FiCheckCircle, label: t('nav.verification'), roles: [1, 2, 3, 5] },
-    { path: '/patient-history', icon: FiUser, label: 'Patient History (NID)', roles: [1, 2, 3, 5] },
-    { path: '/patient', icon: FiUser, label: t('nav.patients'), roles: [1, 2, 5] },
-    { path: '/medicines', icon: FiPackage, label: t('nav.medicines'), roles: [1, 2, 3] },
-    { path: '/batches', icon: FiBox, label: t('nav.batches'), roles: [1, 4, 6] },
-    { path: '/users', icon: FiUsers, label: t('nav.users'), roles: [1, 6] },
-    { path: '/analytics', icon: FiPieChart, label: t('nav.analytics'), roles: [1, 6] },
-    { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6] },
+    { path: '/', icon: FiHome, label: t('nav.dashboard'), roles: [1, 2, 3, 4, 5, 6], accessControl: null },
+    { path: '/prescription/create', icon: FiFileText, label: t('nav.createPrescription'), roles: [1, 2], accessControl: 'canCreatePrescription' },
+    { path: '/templates', icon: FiLayers, label: 'Templates', roles: [1, 2], accessControl: 'canCreatePrescription' },
+    { path: '/pharmacy', icon: FiCheckCircle, label: t('nav.verification'), roles: [1, 2, 3, 5], accessControl: 'canDispense' },
+    { path: '/patient-history', icon: FiUser, label: 'Patient History (NID)', roles: [1, 2, 3, 5], accessControl: null },
+    { path: '/patient', icon: FiUser, label: t('nav.patients'), roles: [1, 2, 5], accessControl: null },
+    { path: '/medicines', icon: FiPackage, label: t('nav.medicines'), roles: [1, 2, 3], accessControl: null },
+    { path: '/batches', icon: FiBox, label: t('nav.batches'), roles: [1, 4, 6], accessControl: 'canCreateBatch' },
+    { path: '/users', icon: FiUsers, label: t('nav.users'), roles: [1], accessControl: 'canManageUsers' }, // Super Admin only
+    { path: '/analytics', icon: FiPieChart, label: t('nav.analytics'), roles: [1, 6], accessControl: 'canViewAnalytics' },
+    { path: '/activity', icon: FiActivity, label: 'Activity Log', roles: [1, 2, 3, 4, 5, 6], accessControl: null },
+    { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6], accessControl: null },
   ]
 
-  // Filter nav items based on role
-  const filteredNavItems = navItems.filter(item => 
-    !role || item.roles.includes(role) || role === 1
-  )
+  // Filter nav items based on role and access control
+  const filteredNavItems = navItems.filter(item => {
+    // Check role
+    if (role && !item.roles.includes(role) && role !== 1) return false
+    
+    // Check access control
+    if (item.accessControl && account) {
+      return hasFeatureAccess(account, item.accessControl)
+    }
+    
+    return true
+  })
 
   return (
     <div className="min-h-screen flex">
@@ -183,6 +194,15 @@ const Layout = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="btn-icon"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
+            </button>
+
             {/* Language Toggle - Disabled for now
             <button
               onClick={toggleLanguage}

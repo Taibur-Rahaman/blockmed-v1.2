@@ -12,7 +12,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { 
   formatTimestamp, shortenAddress, isExpired, daysUntilExpiry,
-  getPrescriptionStatus, getBatchStatus, generatePatientHash
+  getPrescriptionStatus, getBatchStatus, generatePatientHash,
+  hasFeatureAccess, isUserRestricted
 } from '../utils/helpers'
 import { getReadContract, getWriteContract } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
@@ -22,6 +23,21 @@ const PharmacyVerification = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { account, language } = useStore()
+
+  // Check access control
+  useEffect(() => {
+    if (account) {
+      if (isUserRestricted(account)) {
+        toast.error('Your account is restricted. You cannot access this feature.')
+        navigate('/')
+        return
+      }
+      if (!hasFeatureAccess(account, 'canDispense')) {
+        toast.error('You do not have permission to dispense prescriptions.')
+        navigate('/')
+      }
+    }
+  }, [account, navigate])
   
   const [activeTab, setActiveTab] = useState('prescription')
   const [prescriptionId, setPrescriptionId] = useState('')

@@ -92,6 +92,20 @@ const LoginPage = () => {
   const handleAccountConnected = async (account, isDevModeConnection = false) => {
     setAccount(account)
     
+    // Track user login (real-time)
+    try {
+      const stored = localStorage.getItem('blockmed-active-users') || '{}'
+      const activeUsers = JSON.parse(stored)
+      activeUsers[account] = {
+        lastSeen: Date.now(),
+        loginTime: Date.now(),
+        sessionId: `session-${Date.now()}-${Math.random()}`
+      }
+      localStorage.setItem('blockmed-active-users', JSON.stringify(activeUsers))
+    } catch (error) {
+      console.error('Error tracking login:', error)
+    }
+    
     try {
       if (isDevModeConnection) {
         setNetwork('Hardhat Local (Dev Mode)', '0x7a69')
