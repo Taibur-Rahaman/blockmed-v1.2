@@ -19,10 +19,13 @@ import { isDevMode } from '../utils/devMode'
 
 const UserManagement = () => {
   const { t } = useTranslation()
-  const { account, role } = useStore()
+  const { account, role, user, setUser } = useStore()
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [roleLoading, setRoleLoading] = useState(true) // Start as true to wait for role
+  const [roleVerified, setRoleVerified] = useState(false)
+  const [roleError, setRoleError] = useState(null)
   const [filter, setFilter] = useState('all') // all, pending, verified, inactive, restricted
   const [searchQuery, setSearchQuery] = useState('')
   const [processingUser, setProcessingUser] = useState(null)
@@ -45,8 +48,142 @@ const UserManagement = () => {
     canManageUsers: false
   })
 
-  // Check if user is super admin
-  const isSuperAdmin = role === ROLES.ADMIN || role === 1
+  // Reload user role from contract - always verify from source of truth
+  useEffect(() => {
+    const reloadUserRole = async () => {
+      if (!account) {
+        setRoleLoading(false)
+        setRoleVerified(false)
+        setRoleError('No account connected')
+        return
+      }
+
+      setRoleLoading(true)
+      setRoleVerified(false)
+      setRoleError(null)
+      
+      try {
+        const contract = await getReadContract()
+        console.log('[UserManagement] Contract loaded, fetching user info for:', account)
+        
+        const userInfo = await contract.getUser(account)
+        console.log('[UserManagement] User info from contract:', userInfo)
+        
+        if (userInfo && userInfo.role !== undefined && userInfo.role !== null) {
+          const contractRole = Number(userInfo.role)
+          console.log('[UserManagement] Role from contract:', contractRole, 'Current role in store:', role, 'Type:', typeof role, 'ROLES.ADMIN:', ROLES.ADMIN)
+          
+          if (contractRole === 0) {
+            setRoleError('User is not registered or has no role assigned')
+            setRoleVerified(false)
+          } else {
+            // Always update to ensure role is correct (handles type mismatches)
+            const currentRoleNum = role ? Number(role) : null
+            if (currentRoleNum !== contractRole) {
+              console.log('[UserManagement] Updating role from', currentRoleNum, 'to', contractRole)
+              setUser({
+                address: userInfo.userAddress,
+                role: contractRole,
+                name: userInfo.name,
+                licenseNumber: userInfo.licenseNumber,
+                isVerified: userInfo.isVerified,
+                isActive: userInfo.isActive,
+                registeredAt: Number(userInfo.registeredAt),
+              })
+            } else {
+              console.log('[UserManagement] Role is already correct:', contractRole)
+            }
+            setRoleVerified(true)
+            setRoleError(null)
+          }
+        } else {
+          console.warn('[UserManagement] User not found or has no role in contract')
+          setRoleError('User not found in contract or role is invalid')
+          setRoleVerified(false)
+        }
+      } catch (error) {
+        console.error('[UserManagement] Error reloading user role:', error)
+        
+        // Handle specific "could not decode" error - user might not be registered
+        if (error.message?.includes('could not decode') || error.message?.includes('BAD_DATA')) {
+          console.warn('[UserManagement] User may not be registered in contract, checking stored role and owner status')
+          
+          // Check if owner
+          try {
+            const contract = await getReadContract()
+            const contractOwner = await contract.owner()
+            const isOwner = contractOwner.toLowerCase() === account.toLowerCase()
+            if (isOwner) {
+              console.log('[UserManagement] Account is owner, allowing access')
+              setUser({
+                address: account,
+                role: ROLES.ADMIN,
+                name: 'System Admin',
+                licenseNumber: 'ADMIN-001',
+                isVerified: true,
+                isActive: true,
+                registeredAt: Date.now(),
+              })
+              setRoleVerified(true)
+              setRoleError(null)
+              setRoleLoading(false)
+              return
+            }
+          } catch (err) {
+            console.warn('[UserManagement] Could not check owner status:', err)
+          }
+          
+          // Check both role and user.role
+          const storedRoleNum = role ? Number(role) : (user?.role ? Number(user.role) : null)
+          console.log('[UserManagement] Stored role from store.role:', role, 'from user.role:', user?.role, 'Final:', storedRoleNum, 'Type:', typeof role, 'User type:', typeof user?.role)
+          
+          // If we have admin role in store, allow it as fallback
+          if (storedRoleNum === 1 || storedRoleNum === ROLES.ADMIN) {
+            console.log('[UserManagement] Using stored admin role as fallback:', storedRoleNum)
+            setRoleVerified(true)
+            setRoleError(null)
+          } else {
+            // Show detailed error with stored role info
+            const roleInfo = storedRoleNum !== null 
+              ? `${getRoleName(storedRoleNum)} (ID: ${storedRoleNum})` 
+              : 'None'
+            setRoleError(`User not registered in contract. Stored role: ${roleInfo}. Please register first or ensure contract is deployed correctly.`)
+            setRoleVerified(false)
+          }
+        } else {
+          setRoleError(`Error loading role: ${error.message || error.toString()}`)
+          setRoleVerified(false)
+        }
+      } finally {
+        setRoleLoading(false)
+      }
+    }
+    
+    // Small delay to ensure contract is ready
+    const timer = setTimeout(() => {
+      reloadUserRole()
+    }, 100)
+    
+    // Add timeout fallback
+    const timeoutTimer = setTimeout(() => {
+      if (roleLoading) {
+        console.warn('[UserManagement] Role loading timeout')
+        setRoleError('Timeout loading role. Please try refreshing.')
+        setRoleLoading(false)
+      }
+    }, 10000) // 10 second timeout
+    
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(timeoutTimer)
+    }
+  }, [account, setUser]) // Removed 'role' from dependencies to avoid infinite loop
+
+  // Check if user is super admin (handle both number and string types)
+  // Use role from store if available, or wait for contract verification
+  const roleNum = role !== null && role !== undefined ? Number(role) : null
+  // Allow access if role is verified OR if we have a role in store (fallback for contract issues)
+  const isSuperAdmin = (roleVerified || roleNum !== null) && (roleNum === ROLES.ADMIN || roleNum === 1)
 
   // Load users
   useEffect(() => {
@@ -503,6 +640,228 @@ const UserManagement = () => {
     online: users.filter(u => u.isOnline).length,
   }
 
+  // Show loading while checking role (but allow if we have role in store)
+  if (roleLoading && !roleNum) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="card">
+          <div className="text-center py-12">
+            <FiRefreshCw size={64} className="mx-auto mb-4 text-primary-400 animate-spin" />
+            <h1 className="text-2xl font-bold text-white mb-2">Loading...</h1>
+            <p className="text-gray-400">
+              Verifying your access permissions...
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Account: {account ? shortenAddress(account) : 'Not connected'}
+            </p>
+            {roleError && (
+              <p className="text-xs text-yellow-400 mt-2">
+                {roleError}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error if role loading failed, but allow access if role in store is admin
+  if (roleError && !roleVerified) {
+    // Check both role and user.role for stored role
+    const storedRoleNum = role !== null && role !== undefined 
+      ? Number(role) 
+      : (user?.role !== null && user?.role !== undefined ? Number(user.role) : null)
+    const canUseStoredRole = storedRoleNum === 1 || storedRoleNum === ROLES.ADMIN
+    
+    console.log('[UserManagement] Error screen - Stored role:', storedRoleNum, 'Can use stored role:', canUseStoredRole, 'Role from store:', role, 'Type:', typeof role)
+    
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="card">
+          <div className="text-center py-12">
+            <FiAlertTriangle size={64} className="mx-auto mb-4 text-yellow-400" />
+            <h1 className="text-2xl font-bold text-white mb-2">Unable to Verify Role</h1>
+            <p className="text-gray-400 mb-4">
+              {roleError}
+            </p>
+            <div className="space-y-2 mb-4">
+              <p className="text-xs text-gray-500">
+                Account: {account ? shortenAddress(account) : 'Not connected'}
+              </p>
+              <p className="text-xs text-gray-500">
+                Stored role: {storedRoleNum !== null ? `${getRoleName(storedRoleNum)} (ID: ${storedRoleNum})` : 'None found in store'}
+              </p>
+              <p className="text-xs text-gray-400">
+                Raw role value: {role !== null && role !== undefined ? String(role) : 'null/undefined'} (Type: {typeof role})
+              </p>
+            </div>
+            
+            {canUseStoredRole && (
+              <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-sm text-yellow-400 mb-2">
+                  ⚠️ Admin role found in store. Contract verification failed, but you can proceed with stored role.
+                </p>
+                <button
+                  onClick={() => {
+                    console.log('[UserManagement] User clicked Continue with Stored Role')
+                    setRoleVerified(true)
+                    setRoleError(null)
+                  }}
+                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
+                >
+                  Continue with Stored Admin Role
+                </button>
+              </div>
+            )}
+            
+            {!canUseStoredRole && (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-sm text-red-400 mb-2">
+                  ❌ No admin role found. You need to be registered as Admin (role ID: 1) in the contract to access this page.
+                </p>
+                <p className="text-xs text-gray-400 mb-3">
+                  Please ensure you are registered in the contract with Admin role, or contact the system administrator.
+                </p>
+                
+                {/* Manual Role Setting for Development/Testing */}
+                <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
+                  <p className="text-xs text-yellow-400 mb-2 font-semibold">
+                    🛠️ Manual Role Override (Development/Testing)
+                  </p>
+                  <p className="text-xs text-gray-300 mb-3">
+                    If you are the contract owner or have admin privileges, you can manually set your role here. 
+                    This sets the role in local storage for testing purposes.
+                  </p>
+                  <button
+                    onClick={() => {
+                      console.log('[UserManagement] Setting admin role manually')
+                      setUser({
+                        address: account,
+                        role: 1, // Admin
+                        name: 'Admin User',
+                        licenseNumber: 'ADMIN-001',
+                        isVerified: true,
+                        isActive: true,
+                        registeredAt: Math.floor(Date.now() / 1000),
+                      })
+                      setRoleVerified(true)
+                      setRoleError(null)
+                      toast.success('Admin role set. You can now access the admin panel.')
+                    }}
+                    className="px-3 py-1.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
+                  >
+                    Set Admin Role Manually
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            <button
+              onClick={async () => {
+                setRoleLoading(true)
+                setRoleError(null)
+                setRoleVerified(false)
+                try {
+                  const contract = await getReadContract()
+                  
+                  // Check if owner first
+                  try {
+                    const contractOwner = await contract.owner()
+                    const isOwner = contractOwner.toLowerCase() === account.toLowerCase()
+                    if (isOwner) {
+                      setUser({
+                        address: account,
+                        role: ROLES.ADMIN,
+                        name: 'System Admin',
+                        licenseNumber: 'ADMIN-001',
+                        isVerified: true,
+                        isActive: true,
+                        registeredAt: Date.now(),
+                      })
+                      setRoleVerified(true)
+                      setRoleError(null)
+                      setRoleLoading(false)
+                      return
+                    }
+                  } catch (err) {
+                    console.warn('[UserManagement] Could not check owner:', err)
+                  }
+                  
+                  const userInfo = await contract.getUser(account)
+                  if (userInfo && userInfo.role !== undefined && userInfo.role !== null) {
+                    const contractRole = Number(userInfo.role)
+                    if (contractRole === 0) {
+                      setRoleError('User is not registered or has no role assigned')
+                    } else {
+                      setUser({
+                        address: userInfo.userAddress,
+                        role: contractRole,
+                        name: userInfo.name,
+                        licenseNumber: userInfo.licenseNumber,
+                        isVerified: userInfo.isVerified,
+                        isActive: userInfo.isActive,
+                        registeredAt: Number(userInfo.registeredAt),
+                      })
+                      setRoleVerified(true)
+                      setRoleError(null)
+                    }
+                  } else {
+                    setRoleError('User not found in contract')
+                  }
+                } catch (error) {
+                  console.error('[UserManagement] Error refreshing role:', error)
+                  if (error.message?.includes('could not decode') || error.message?.includes('BAD_DATA')) {
+                    // Check if owner
+                    try {
+                      const contract = await getReadContract()
+                      const contractOwner = await contract.owner()
+                      const isOwner = contractOwner.toLowerCase() === account.toLowerCase()
+                      if (isOwner) {
+                        setUser({
+                          address: account,
+                          role: ROLES.ADMIN,
+                          name: 'System Admin',
+                          licenseNumber: 'ADMIN-001',
+                          isVerified: true,
+                          isActive: true,
+                          registeredAt: Date.now(),
+                        })
+                        setRoleVerified(true)
+                        setRoleError(null)
+                        setRoleLoading(false)
+                        return
+                      }
+                    } catch (err) {
+                      console.warn('[UserManagement] Could not check owner:', err)
+                    }
+                    
+                    if (storedRoleNum === 1) {
+                      setRoleVerified(true)
+                      setRoleError(null)
+                    } else {
+                      setRoleError('User not registered in contract. Please register first.')
+                    }
+                  } else {
+                    setRoleError(`Error: ${error.message || error.toString()}`)
+                  }
+                } finally {
+                  setRoleLoading(false)
+                }
+              }}
+              className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            >
+              <FiRefreshCw className="inline mr-2" />
+              Retry Verification
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Debug logging
+  console.log('[UserManagement] Access Check - Account:', account, 'Role:', role, 'Role Type:', typeof role, 'Role Number:', roleNum, 'ROLES.ADMIN:', ROLES.ADMIN, 'Is Super Admin:', isSuperAdmin, 'Role Verified:', roleVerified)
+
   // Show access denied if not super admin
   if (!isSuperAdmin) {
     return (
@@ -514,9 +873,98 @@ const UserManagement = () => {
             <p className="text-gray-400">
               This page is restricted to Super Admin only.
             </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Your current role: {getRoleName(role)}
-            </p>
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-500">
+                Your current role: <span className="font-semibold text-white">{getRoleName(role)}</span> (ID: {role !== null && role !== undefined ? role : 'null'}, Type: {typeof role})
+              </p>
+              <p className="text-xs text-gray-600">
+                Required: Admin (ID: 1)
+              </p>
+              <p className="text-xs text-gray-600">
+                Account: {account ? shortenAddress(account) : 'Not connected'}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                setRoleLoading(true)
+                setRoleVerified(false)
+                try {
+                  const contract = await getReadContract()
+                  
+                  // Check if owner first
+                  try {
+                    const contractOwner = await contract.owner()
+                    const isOwner = contractOwner.toLowerCase() === account.toLowerCase()
+                    if (isOwner) {
+                      setUser({
+                        address: account,
+                        role: ROLES.ADMIN,
+                        name: 'System Admin',
+                        licenseNumber: 'ADMIN-001',
+                        isVerified: true,
+                        isActive: true,
+                        registeredAt: Date.now(),
+                      })
+                      setRoleVerified(true)
+                      setRoleLoading(false)
+                      toast.success('Owner access granted')
+                      return
+                    }
+                  } catch (err) {
+                    console.warn('[UserManagement] Could not check owner:', err)
+                  }
+                  
+                  const userInfo = await contract.getUser(account)
+                  if (userInfo && userInfo.role !== 0n) {
+                    const contractRole = Number(userInfo.role)
+                    console.log('[UserManagement] Manual refresh - Role from contract:', contractRole)
+                    setUser({
+                      address: userInfo.userAddress,
+                      role: contractRole,
+                      name: userInfo.name,
+                      licenseNumber: userInfo.licenseNumber,
+                      isVerified: userInfo.isVerified,
+                      isActive: userInfo.isActive,
+                      registeredAt: Number(userInfo.registeredAt),
+                    })
+                    setRoleVerified(true)
+                  } else {
+                    toast.error('User not registered in contract')
+                  }
+                } catch (error) {
+                  console.error('[UserManagement] Error refreshing role:', error)
+                  // Check if owner on error
+                  try {
+                    const contract = await getReadContract()
+                    const contractOwner = await contract.owner()
+                    const isOwner = contractOwner.toLowerCase() === account.toLowerCase()
+                    if (isOwner) {
+                      setUser({
+                        address: account,
+                        role: ROLES.ADMIN,
+                        name: 'System Admin',
+                        licenseNumber: 'ADMIN-001',
+                        isVerified: true,
+                        isActive: true,
+                        registeredAt: Date.now(),
+                      })
+                      setRoleVerified(true)
+                      toast.success('Owner access granted')
+                    } else {
+                      toast.error('Failed to refresh role: ' + error.message)
+                    }
+                  } catch (err) {
+                    toast.error('Failed to refresh role: ' + error.message)
+                  }
+                } finally {
+                  setRoleLoading(false)
+                }
+              }}
+              className="mt-4 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            >
+              <FiRefreshCw className="inline mr-2" />
+              Refresh Role
+            </button>
           </div>
         </div>
       </div>

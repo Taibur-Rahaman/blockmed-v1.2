@@ -71,6 +71,12 @@ const ActivityLog = () => {
       color: 'text-green-400',
       bgColor: 'bg-green-500/20',
       label: 'User Verified'
+    },
+    'UserLogin': {
+      icon: FiUsers,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/20',
+      label: 'User Login'
     }
   }
 
@@ -282,8 +288,39 @@ const ActivityLog = () => {
           console.warn('Error loading UserVerified events:', error)
         }
 
+        // Load login activities from localStorage
+        try {
+          const activeUsersData = localStorage.getItem('blockmed-active-users')
+          if (activeUsersData) {
+            const activeUsers = JSON.parse(activeUsersData)
+            Object.entries(activeUsers).forEach(([address, userData]) => {
+              if (userData.loginTime) {
+                allActivities.push({
+                  id: `login-${address}-${userData.loginTime}`,
+                  type: 'UserLogin',
+                  timestamp: userData.loginTime / 1000, // Convert to seconds
+                  blockNumber: null, // Not a blockchain event
+                  transactionHash: null,
+                  user: address,
+                  loginTime: userData.loginTime,
+                  lastSeen: userData.lastSeen,
+                  sessionId: userData.sessionId,
+                  data: {
+                    user: address,
+                    loginTime: userData.loginTime,
+                    lastSeen: userData.lastSeen,
+                    sessionId: userData.sessionId
+                  }
+                })
+              }
+            })
+          }
+        } catch (error) {
+          console.warn('Error loading login activities from localStorage:', error)
+        }
+
         // Get block timestamps for all unique blocks
-        const uniqueBlocks = [...new Set(allActivities.map(a => a.blockNumber))]
+        const uniqueBlocks = [...new Set(allActivities.filter(a => a.blockNumber !== null).map(a => a.blockNumber))]
         const blockTimestamps = {}
         
         for (const blockNum of uniqueBlocks) {
@@ -298,10 +335,18 @@ const ActivityLog = () => {
         }
 
         // Update activities with actual timestamps
-        const activitiesWithTimestamps = allActivities.map(activity => ({
-          ...activity,
-          timestamp: blockTimestamps[activity.blockNumber] || activity.blockNumber * 12 // Fallback: ~12s per block
-        }))
+        const activitiesWithTimestamps = allActivities.map(activity => {
+          if (activity.blockNumber !== null) {
+            // Blockchain event - use block timestamp
+            return {
+              ...activity,
+              timestamp: blockTimestamps[activity.blockNumber] || activity.blockNumber * 12 // Fallback: ~12s per block
+            }
+          } else {
+            // LocalStorage event (login) - already has timestamp
+            return activity
+          }
+        })
 
         // Sort by timestamp (newest first)
         activitiesWithTimestamps.sort((a, b) => b.timestamp - a.timestamp)
@@ -498,11 +543,28 @@ const ActivityLog = () => {
                     {activity.doctor ? 'Doctor' : 
                      activity.pharmacist ? 'Pharmacist' : 
                      activity.manufacturer ? 'Manufacturer' : 
-                     activity.verifiedBy ? 'Verified By' : 'User'}: 
+                     activity.verifiedBy ? 'Verified By' : 
+                     activity.type === 'UserLogin' ? 'Logged In' : 'User'}: 
                   </span>
                   <span className="text-white font-mono text-xs">
                     {shortenAddress(activity.doctor || activity.pharmacist || activity.manufacturer || activity.user || activity.verifiedBy)}
                   </span>
+                </div>
+              )}
+
+              {activity.type === 'UserLogin' && activity.lastSeen && (
+                <div className="flex items-center gap-2 text-sm">
+                  <FiClock size={14} className="text-gray-400" />
+                  <span className="text-gray-300">Last Active: </span>
+                  <span className="text-white">{formatTimestamp(activity.lastSeen / 1000)}</span>
+                </div>
+              )}
+
+              {activity.type === 'UserLogin' && activity.sessionId && (
+                <div className="flex items-center gap-2 text-sm">
+                  <FiHash size={14} className="text-gray-400" />
+                  <span className="text-gray-300">Session ID: </span>
+                  <span className="text-white font-mono text-xs">{activity.sessionId.substring(0, 20)}...</span>
                 </div>
               )}
 
@@ -522,25 +584,34 @@ const ActivityLog = () => {
                 </div>
               )}
 
-              {/* Transaction Hash */}
-              <div className="flex items-center gap-2 text-sm mt-3 pt-3 border-t border-white/10">
-                <FiHash size={14} className="text-gray-400" />
-                <span className="text-gray-300">Transaction: </span>
-                <span className="text-white font-mono text-xs">{shortenAddress(activity.transactionHash, 12)}</span>
-                <a
-                  href={`#`}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    // In production, link to block explorer
-                    navigator.clipboard.writeText(activity.transactionHash)
-                    toast.success('Transaction hash copied to clipboard')
-                  }}
-                  className="text-primary-400 hover:text-primary-300 ml-2"
-                  title="Copy transaction hash"
-                >
-                  <FiExternalLink size={12} />
-                </a>
-              </div>
+              {/* Transaction Hash (only for blockchain events) */}
+              {activity.transactionHash && (
+                <div className="flex items-center gap-2 text-sm mt-3 pt-3 border-t border-white/10">
+                  <FiHash size={14} className="text-gray-400" />
+                  <span className="text-gray-300">Transaction: </span>
+                  <span className="text-white font-mono text-xs">{shortenAddress(activity.transactionHash, 12)}</span>
+                  <a
+                    href={`#`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      // In production, link to block explorer
+                      navigator.clipboard.writeText(activity.transactionHash)
+                      toast.success('Transaction hash copied to clipboard')
+                    }}
+                    className="text-primary-400 hover:text-primary-300 ml-2"
+                    title="Copy transaction hash"
+                  >
+                    <FiExternalLink size={12} />
+                  </a>
+                </div>
+              )}
+
+              {/* Local Event Indicator */}
+              {activity.type === 'UserLogin' && (
+                <div className="flex items-center gap-2 text-sm mt-3 pt-3 border-t border-white/10">
+                  <span className="text-xs text-gray-500 italic">Local event (not on blockchain)</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

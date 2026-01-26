@@ -148,6 +148,11 @@ export const useStore = create(
     {
       name: 'blockmed-storage',
       partialize: (state) => ({
+        account: state.account,
+        user: state.user,
+        role: state.role,
+        isConnected: state.isConnected,
+        isVerified: state.isVerified,
         language: state.language,
         theme: state.theme,
         cachedPrescriptions: state.cachedPrescriptions,
