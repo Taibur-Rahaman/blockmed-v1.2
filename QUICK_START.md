@@ -1,18 +1,29 @@
-# ⚡ Quick Start - BlockMed Wallet Setup
+# ⚡ Quick Start – BlockMed V1.2
 
-## 🎯 Easiest Method: Dev Mode (Recommended)
+## 🎯 Easiest method: Dev Mode (recommended)
 
-**No wallet needed! No funding issues!**
+**No wallet needed. No funding issues.**
 
 1. **Start Hardhat:**
    ```bash
    npm run blockchain
    ```
 
-2. **In the app, click "🔧 Use Dev Mode"**
-   - Select any account
+2. **Deploy contract (in another terminal):**
+   ```bash
+   npm run deploy:check
+   ```
+   This deploys if needed and updates `config.js` and `.env.local`.
+
+3. **Start the app:**
+   ```bash
+   npm run dev
+   ```
+
+4. **In the app:** Click **"🔧 Use Dev Mode (Recommended)"** on the login page
+   - Select an account (Admin #0, Doctor #1, Pharmacist #2, etc.)
    - Each has 10,000 ETH automatically
-   - Ready to use immediately!
+   - Or after login: **Settings → Blockchain Setup → Enable Dev Mode**
 
 **That's it!** ✅
 
@@ -63,8 +74,10 @@
 
 ---
 
-## 📞 Need Help?
+## 📞 Need help?
 
-Check `WALLET_SETUP.md` for detailed instructions.
+- **[WALLET_SETUP.md](./WALLET_SETUP.md)** – Dev Mode and MetaMask details
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** – Deploy and config
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** – Common issues
 
-**Remember: Dev Mode is the easiest option!** 🚀
+**Remember: Dev Mode is the easiest option.** 🚀

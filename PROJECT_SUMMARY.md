@@ -1,55 +1,53 @@
-# 🏥 BlockMed V1.1 - Project Summary
+# 🏥 BlockMed V1.2 / V2 – Project Summary
 
 ## 📋 Overview
 
-**Project Name:** BlockMed - Blockchain-based Prescription Management System  
-**Version:** 1.1 (Supervisor Demo Ready)  
-**Purpose:** Doctor-side dashboard for creating and managing blockchain-secured prescriptions  
-**Tech Stack:** React, Vite, ethers.js, Solidity, Hardhat, MetaMask
+**Project Name:** BlockMed – Blockchain-based Prescription & Medicine Verification  
+**Version:** 1.2 / V2  
+**Purpose:** Prescription creation, pharmacy verification, medicine batch tracking, and anti-fake medicine alerts with RBAC  
+**Tech Stack:** React, Vite, ethers.js, Solidity, Hardhat, MetaMask (optional – Dev Mode available)
 
 ---
 
 ## 🎯 Key Features Implemented
 
-### ✅ 1. MetaMask Integration
-- Wallet connection with ethers.js v6
-- Account detection and switching
-- Network validation
-- Connection persistence
+### ✅ 1. Dev Mode & Wallet
+- **Dev Mode** – Use pre-funded Hardhat accounts without MetaMask (recommended for local dev)
+- Wallet connection with ethers.js v6 (MetaMask optional)
+- Account detection and switching; network validation
+- Deploy script updates `config.js` and `.env.local`
 
-### ✅ 2. Smart Contract Interaction
-- Deploy and interact with BlockMed.sol
-- Add prescriptions to blockchain
-- Retrieve prescription data
-- Verify prescriptions
-- View doctor's prescription history
+### ✅ 2. Smart Contract (BlockMedV2)
+- RBAC: Admin, Doctor, Pharmacist, Manufacturer, Patient, Regulator
+- Prescriptions: create, update, dispense, revoke; versioning; patient hash for privacy
+- Medicine batches: create, dispense from batch, recall, flag; authenticity verification
+- Admin can dispense (onlyPharmacistOrAdmin) for prescriptions and batches
 
-### ✅ 3. Doctor Dashboard
-- Clean, professional UI
-- Wallet status display
-- Easy navigation
-- Feature highlights
+### ✅ 3. Prescription & Pharmacy
+- Create prescriptions (on-chain or demo when blockchain not connected)
+- Pharmacy Verification: look up by prescription ID or patient NID; QR scan; dispense
+- Demo mode: create and verify/dispense prescriptions locally when chain is offline
+- “Save to blockchain now” for demo prescriptions when Dev Mode is enabled
 
-### ✅ 4. Prescription Creation
-- Form validation
-- Blockchain transaction submission
-- Transaction hash display
-- Success/error handling
+### ✅ 4. Medicine Batches & Roles
+- Manufacturer: create batches; recall own batches
+- Pharmacist / Admin: verify batches, dispense from batch, flag suspicious
+- Regulator: recall any batch; view analytics
 
-### ✅ 5. QR Code Generation
-- Automatic QR creation after transaction
-- Embedded prescription data
-- Scannable with mobile devices
-- Display patient hash + IPFS hash
+### ✅ 5. UI & Extras
+- Prescription templates; multi-language (English & Bangla)
+- QR codes for prescriptions and batches
+- Activity Log, Analytics, User Management (Admin)
+- Optional event indexer (HTTP API on port 3002)
 
 ---
 
 ## 📁 Project Structure
 
 ```
-BlockMed V1.1/
+BlockMed V1.2/
 ├── contracts/
-│   └── BlockMed.sol                    # Smart contract (Solidity)
+│   └── BlockMedV2.sol                  # Smart contract (RBAC, prescriptions, batches)
 │
 ├── scripts/
 │   └── deploy.js                       # Hardhat deployment script

@@ -2,6 +2,8 @@
 
 For real-life and regulatory use (e.g. HIPAA/GDPR), **do not store any raw patient identifiers or PII on the blockchain**. On-chain data is public and permanent.
 
+See **[BLOCKCHAIN_HOW_IT_WORKS.md](./BLOCKCHAIN_HOW_IT_WORKS.md)** for how BlockMed uses `patientHash` and `ipfsHash` on-chain.
+
 ## What to store on-chain
 
 - **Integrity/commitment only:** Use a **hash** of the patient identifier, not the identifier itself.

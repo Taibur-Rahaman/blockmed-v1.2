@@ -13,11 +13,14 @@
    npx hardhat node
    ```
 
-2. **In your app, click "🔧 Use Dev Mode (Recommended)"**
-   - Select any account (Admin, Doctor, Pharmacist, etc.)
+2. **Deploy contract** (in another terminal): `npm run deploy:check` – updates config and `.env.local`.
+
+3. **Start the app:** `npm run dev`
+
+4. **In the app:** On the login page, click **"🔧 Use Dev Mode (Recommended)"**
+   - Select any account (Admin #0, Doctor #1, Pharmacist #2, etc.)
    - Each account has **10,000 ETH** automatically
-   - No wallet setup needed!
-   - Free transactions!
+   - No wallet setup needed. Or enable Dev Mode after login: **Settings → Blockchain Setup → Enable Dev Mode**
 
 **That's it!** You're ready to test. No funding, no wallet connection issues.
 
@@ -111,14 +114,19 @@ When using Dev Mode, you can switch between these pre-funded accounts:
 # Start Hardhat node
 npm run blockchain
 
-# Deploy contracts
-npm run deploy
+# Deploy contract (check first, or force redeploy)
+npm run deploy:check   # Deploy only if no contract at address; updates config + .env.local
+npm run deploy        # Always redeploy
 
 # Run tests
 npm run test:blockchain
+npm run test:all
 
 # Start app
 npm run dev
+
+# One command: blockchain + deploy + dev
+npm run start
 ```
 
 ---

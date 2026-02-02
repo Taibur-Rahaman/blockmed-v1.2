@@ -6,7 +6,11 @@ This guide explains **where your data lives**, **why it does not disappear** whe
 
 ## 1. Where Data Lives
 
-All prescription and batch data is stored **on the blockchain**, not in your app or in a local database:
+**On-chain (BlockMedV2 contract):** All prescription and batch data that was submitted to the blockchain is stored **on the blockchain**, not in your app or in a local database:
+
+- **Demo mode:** When the blockchain is not connected, you can still create and verify/dispense prescriptions and batches **locally** (in the app store). These are **not** on-chain until you connect (e.g. Dev Mode) and use “Save to blockchain now” or create a new prescription with the chain connected.
+
+**On-chain only (persistent):**
 
 - **Prescriptions**: `BlockMedV2` contract → `prescriptions[id]`, `patientPrescriptions[patientHash]`, `doctorPrescriptions[doctor]`
 - **Medicine batches**: `medicineBatches[id]`, `batchNumberToId[batchNumber]`
@@ -93,4 +97,4 @@ So: **old data is found by querying the same contract (same address + same netwo
 - **Data never deletes from chain** when you only close the project or run a new `npm run dev`.
 - **Data is “lost” locally** if you restart the Hardhat node (in-memory chain) or point the app at a newly deployed contract without keeping the old address.
 - **Find old data** via Dashboard (doctor), Patient History / Patient Portal (patient), Pharmacy Verification (ID or NID), and Activity Log (events). Use the same contract address and network.
-- **Keep using the same data** by setting `VITE_CONTRACT_ADDRESS` in `.env` to the contract you want and not changing it after deploy.
+- **Keep using the same data** by using the contract address written by the deploy script (`.env.local` and config) and not changing it after deploy.

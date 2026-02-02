@@ -1,340 +1,137 @@
-# 🏥 BlockMed V1.1 - Doctor Dashboard
+# 🏥 BlockMed V1.2 / V2 – Blockchain Prescription & Medicine Verification
 
-Blockchain-based prescription management system with MetaMask integration and QR code generation.
+Blockchain-based prescription management and anti-fake medicine tracking with **Dev Mode** (no wallet needed), **MetaMask** support, and **demo mode** when the chain is offline.
 
-## 🎯 Supervisor Demo Features
+## 🎯 Features
 
-✅ **MetaMask Integration** - Connect wallet with ethers.js  
-✅ **Blockchain Storage** - Store prescriptions on-chain  
-✅ **QR Code Generation** - Instant QR codes for prescriptions  
-✅ **Doctor Dashboard** - Clean, professional UI  
-✅ **Activity Log** - Complete audit trail of all blockchain events  
-✅ **Prescription Templates** - Save and reuse common prescription patterns  
-✅ **Super Admin Portal** - Real-time user monitoring and access control
+- **Dev Mode** – Use pre-funded Hardhat accounts without MetaMask (recommended for local dev)
+- **Demo mode** – Create and verify prescriptions/batches locally when blockchain is not connected
+- **BlockMedV2 contract** – RBAC (Admin, Doctor, Pharmacist, Manufacturer, Patient, Regulator), prescriptions, medicine batches, recall/flag
+- **Admin can dispense** – Admin or Pharmacist can dispense prescriptions and from batches
+- **QR codes** – Prescription and batch verification; QR scan on Pharmacy Verification page
+- **Prescription templates** – Save and reuse common prescriptions
+- **Multi-language** – English and Bangla (বাংলা)
+- **Indexer** (optional) – Event indexer + HTTP API on port 3002 for prescriptions/batches
 
 ---
 
 ## 📚 Documentation
 
-### Main Documentation
-- **[README.md](./README.md)** - This file (setup and overview)
-- **[WEEKLY_UPDATES.md](./WEEKLY_UPDATES.md)** - Consolidated weekly feature updates
-- **[TEAM_UPDATE_SUPERVISOR.md](./TEAM_UPDATE_SUPERVISOR.md)** - Summary for supervisors
-- **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** - Complete Super Admin Portal guide
-
-### System Guides
-- **[BLOCKMED_V2_GUIDE.md](./BLOCKMED_V2_GUIDE.md)** - Complete system guide
-- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - Project overview
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture
-
-### Setup & Deployment
-- **[QUICK_START.md](./QUICK_START.md)** - Quick setup guide
-- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Deployment instructions
-- **[WALLET_SETUP.md](./WALLET_SETUP.md)** - Wallet configuration
-- **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** - Testing guide  
+| Document | Purpose |
+|----------|---------|
+| **[START_HERE.md](./START_HERE.md)** | First-time setup and navigation |
+| **[QUICK_START.md](./QUICK_START.md)** | Fast setup (Dev Mode or wallet) |
+| **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)** | How blockchain works (contract, connection, indexer, diagrams) |
+| **[BLOCKMED_V2_GUIDE.md](./BLOCKMED_V2_GUIDE.md)** | System guide by role and page |
+| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Deploy contract and config |
+| **[WALLET_SETUP.md](./WALLET_SETUP.md)** | Dev Mode and MetaMask setup |
+| **[BLOCKCHAIN_DATA_PERSISTENCE.md](./BLOCKCHAIN_DATA_PERSISTENCE.md)** | Where data lives and how to find it |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | System architecture |
+| **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** | Project overview |
+| **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** | Super Admin features |
+| **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** | Testing guide |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and fixes |
+| **[docs/PRIVACY_ONCHAIN.md](./docs/PRIVACY_ONCHAIN.md)** | Privacy and on-chain data |
+| **[docs/METAMASK_LOCALHOST_FIX.md](./docs/METAMASK_LOCALHOST_FIX.md)** | MetaMask localhost tips |
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚡ Quick Setup
 
-### 1️⃣ Install Dependencies
+### 1. Install
 
 ```bash
 npm install
 ```
 
-This will install:
-- `react`, `react-dom`, `react-router-dom`
-- `ethers` (v6.9.0) for blockchain interaction
-- `qrcode.react` for QR code generation
-- `vite` for fast development
+### 2. Start blockchain and deploy
 
----
-
-### 2️⃣ Deploy Smart Contract
-
-#### Option A: Using Hardhat (Recommended for local testing)
-
-1. **Install Hardhat**
-```bash
-npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
-npx hardhat init
-```
-
-2. **Deploy Contract**
-```bash
-npx hardhat node
-# In another terminal:
-npx hardhat run scripts/deploy.js --network localhost
-```
-
-3. **Copy the deployed contract address** and update:
-   - `/src/utils/config.js` → `CONTRACT_ADDRESS`
-
-#### Option B: Using Remix IDE
-
-1. Go to [remix.ethereum.org](https://remix.ethereum.org)
-2. Create new file: `BlockMed.sol`
-3. Copy content from `/contracts/BlockMed.sol`
-4. Compile with Solidity 0.8.19+
-5. Deploy to:
-   - **Local**: Hardhat/Ganache
-   - **Testnet**: Sepolia/Goerli
-6. Copy deployed address → update `config.js`
-
----
-
-### 3️⃣ Configure MetaMask
-
-1. **Install MetaMask** browser extension
-2. **Add Local Network** (if using Hardhat):
-   - Network Name: `Hardhat Local`
-   - RPC URL: `http://127.0.0.1:8545`
-   - Chain ID: `31337`
-   - Currency: `ETH`
-
-3. **Import Test Account**:
-   - Use one of the private keys from `npx hardhat node`
-   - Or use your testnet account for Sepolia/Goerli
-
----
-
-### 4️⃣ Update Contract Configuration
-
-Edit `/src/utils/config.js`:
-
-```javascript
-export const CONTRACT_ADDRESS = 'YOUR_DEPLOYED_CONTRACT_ADDRESS_HERE'
-```
-
----
-
-### 5️⃣ Start Development Server
+**Option A – One command (blockchain + deploy + app):**
 
 ```bash
+npm run start
+```
+
+**Option B – Separate terminals:**
+
+```bash
+# Terminal 1
+npm run blockchain
+
+# Terminal 2 (after node is up)
+npm run deploy:check
 npm run dev
 ```
 
-The app will open at `http://localhost:3000`
+### 3. Use the app
+
+- Open **http://localhost:3000**
+- Click **🔧 Use Dev Mode** → choose account (e.g. Admin #0, Doctor #1)
+- Or connect **MetaMask** (Hardhat Local, Chain ID 31337)
+
+After a **new deploy**, restart the dev server and hard-refresh the browser so `VITE_CONTRACT_ADDRESS` is picked up.
 
 ---
 
-## 🧪 Testing Checklist
+## 📜 Scripts
 
-### ✅ Step 1: MetaMask Connection
-- [ ] Click "Connect MetaMask" button
-- [ ] MetaMask popup appears
-- [ ] Accept connection
-- [ ] Wallet address shows "Connected ✅"
-- [ ] Dashboard page loads
-
-### ✅ Step 2: Dashboard Navigation
-- [ ] Connected wallet address is visible
-- [ ] "Create New Prescription" button works
-- [ ] Redirects to `/add-prescription`
-
-### ✅ Step 3: Prescription Creation
-- [ ] Enter Patient Hash: `hash123`
-- [ ] Enter IPFS Hash: `QmXyz123abc...`
-- [ ] Click "Submit Prescription"
-- [ ] MetaMask confirmation popup appears
-- [ ] Confirm transaction
-- [ ] "Transaction Successful!" message shows
-- [ ] Transaction hash is displayed
-
-### ✅ Step 4: QR Code Verification
-- [ ] QR code appears automatically
-- [ ] QR code is scannable (test with phone camera)
-- [ ] QR contains: `Prescription: hash123 | IPFS: QmXyz123...`
-
-### ✅ Step 5: Blockchain Verification
-Open browser console and verify:
-```javascript
-// Get prescription count
-const count = await contract.prescriptionCount()
-console.log('Total Prescriptions:', count.toString())
-
-// Get prescription details
-const prescription = await contract.getPrescription(1)
-console.log('Prescription:', prescription)
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server |
+| `npm run blockchain` | Start Hardhat node (localhost:8545) |
+| `npm run deploy` | Redeploy contract and update config + .env.local |
+| `npm run deploy:check` | Deploy only if no contract at configured address |
+| `npm run start` | Run blockchain, then deploy, then dev (concurrently) |
+| `npm run test:blockchain` | Run Hardhat contract tests |
+| `npm run test:all` | Run full feature test script |
+| `npm run indexer` | Start event indexer (API on port 3002) |
+| `npm run verify:user` | Verify user (e.g. `USER_ADDRESS=0x... npm run verify:user`) |
 
 ---
 
-## 📂 Project Structure
+## 📂 Project structure
 
 ```
-BlockMed V1.1/
+BlockMed V1.2/
 ├── contracts/
-│   └── BlockMed.sol              # Smart contract
+│   └── BlockMedV2.sol           # Smart contract (RBAC, prescriptions, batches)
 ├── src/
-│   ├── components/
-│   │   └── MetaMaskConnect.jsx   # Wallet connection
-│   ├── pages/
-│   │   ├── Dashboard.jsx         # Doctor dashboard
-│   │   └── AddPrescription.jsx   # Prescription form + QR
-│   ├── utils/
-│   │   ├── contractABI.json      # Contract ABI
-│   │   └── config.js             # Contract address & config
-│   ├── App.jsx                   # Main router
-│   ├── main.jsx                  # React entry
-│   └── index.css                 # Global styles
-├── index.html
-├── package.json
-└── vite.config.js
+│   ├── components/              # Layout, BlockchainInfo, ErrorBoundary
+│   ├── pages/                    # Login, Dashboard, CreatePrescription, PharmacyVerification, etc.
+│   ├── store/useStore.js        # Zustand state (user, demo prescriptions, etc.)
+│   ├── hooks/useBlockchain.js   # Blockchain connection state
+│   ├── utils/                   # config, contractHelper, devMode, helpers, blockchainData
+│   └── i18n/                    # English & Bangla
+├── scripts/
+│   ├── check-and-deploy.cjs     # Deploy and update config + .env.local
+│   ├── indexer/index.js          # Event indexer + HTTP API (port 3002)
+│   ├── verify-user.cjs          # CLI: verify a user (Admin)
+│   └── test-*.mjs / test-local.cjs
+├── docs/                        # BLOCKCHAIN_HOW_IT_WORKS, PRIVACY_ONCHAIN, METAMASK_LOCALHOST_FIX
+├── test/BlockMedV2.test.cjs     # Contract tests
+└── *.md                         # Documentation
 ```
-
----
-
-## 🎓 Supervisor Demo Script
-
-### Opening Statement:
-*"Good day, Sir. This is BlockMed Version 1.1 - our blockchain-based prescription management system."*
-
-### Demo Flow:
-
-**1. MetaMask Connection** (30 seconds)
-- Show MetaMask not connected
-- Click connect button
-- Explain: *"The doctor authenticates using their MetaMask wallet, ensuring secure identity verification"*
-- Show connected address
-
-**2. Dashboard** (20 seconds)
-- Point out wallet address
-- Highlight features: *"Blockchain secured, QR generation, verification system"*
-- Click "Create New Prescription"
-
-**3. Prescription Creation** (60 seconds)
-- Fill Patient Hash: `patient_demo_001`
-- Fill IPFS Hash: `QmDemo123HashForSupervisorDemo`
-- Click Submit
-- When MetaMask pops up: *"This triggers a blockchain transaction"*
-- Confirm transaction
-- Show transaction hash: *"This is proof the prescription is stored immutably on-chain"*
-
-**4. QR Code** (30 seconds)
-- Show generated QR code
-- Scan with phone (if possible): *"This QR contains the patient and prescription data"*
-- Explain: *"In Phase 3, we'll connect this QR to direct blockchain verification by pharmacies"*
-
-**5. Blockchain Verification** (30 seconds)
-- Open browser console
-- Show prescription count increased
-- Explain: *"Every prescription is permanently recorded and traceable"*
-
-### Closing Statement:
-*"Sir, this completes Phase 2. We have successfully integrated:*
-- *Frontend React application*
-- *MetaMask wallet authentication*
-- *Smart contract interaction via ethers.js*
-- *QR code generation for prescriptions*
-
-*Next phase will add patient and pharmacy portals with full QR verification."*
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Issue: "Please install MetaMask"
-**Solution**: Install MetaMask browser extension from [metamask.io](https://metamask.io)
+- **Contract not deployed** → Run `npm run deploy:check` (with Hardhat node running). Then restart `npm run dev` and hard-refresh the browser.
+- **No wallet / want to skip MetaMask** → Use **Dev Mode** on the login page (Settings → Blockchain Setup → Enable Dev Mode, or “Use Dev Mode” on login).
+- **Demo mode** → When blockchain is not connected, you can still create prescriptions and verify/dispense them locally; enable Dev Mode and run blockchain to save on-chain.
 
-### Issue: "Transaction Failed"
-**Solutions**:
-- Check MetaMask is on correct network
-- Verify contract address in `config.js`
-- Ensure wallet has enough ETH for gas
-- Check contract is deployed correctly
-
-### Issue: "Invalid contract address"
-**Solution**: 
-- Re-deploy contract
-- Update `CONTRACT_ADDRESS` in `/src/utils/config.js`
-
-### Issue: QR code not showing
-**Solution**: 
-- Check transaction was confirmed
-- Verify `qrcode.react` is installed: `npm install qrcode.react`
+See **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** and **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** for more.
 
 ---
 
 ## 🚀 Deploy to Vercel
 
-### Quick Deploy
+1. Push to GitHub (e.g. `main`).
+2. Import repo in Vercel; set env: `VITE_CONTRACT_ADDRESS` = your deployed contract address.
+3. Build: Vite; output: `dist`.
 
-1. **Push to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/Taibur-Rahaman/blockmed-v1.2.git
-   git push -u origin main
-   ```
-
-2. **Import to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Vercel will auto-detect Vite settings
-
-3. **Configure Environment Variables**
-   - In Vercel project settings, go to "Environment Variables"
-   - Add: `VITE_CONTRACT_ADDRESS` = `your_contract_address`
-   - Redeploy after adding variables
-
-4. **Deploy**
-   - Vercel will automatically build and deploy
-   - Your app will be live at `https://your-project.vercel.app`
-
-### Manual Configuration
-
-If auto-detection doesn't work, configure in Vercel dashboard:
-- **Framework Preset**: Vite
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
-- **Install Command**: `npm install`
-
-### Environment Variables
-
-Set these in Vercel:
-- `VITE_CONTRACT_ADDRESS` - Your deployed smart contract address
+See **[VERCEL.md](./VERCEL.md)** for details.
 
 ---
 
-## 🚀 Next Steps (Phase 3)
-
-- [ ] Add patient dashboard
-- [ ] Add pharmacy verification portal
-- [ ] Connect QR scanning to blockchain verification
-- [ ] Add prescription history view
-- [ ] Implement role-based access control
-
----
-
-## 📝 Important Notes
-
-⚠️ **Before Demo**:
-1. Deploy contract and update address
-2. Test full flow at least once
-3. Ensure MetaMask has test ETH
-4. Keep network configuration handy
-
-✨ **For Production**:
-- Use environment variables for contract address
-- Deploy to mainnet/testnet
-- Add proper error handling
-- Implement user authentication
-- Add prescription encryption
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check console for errors
-2. Verify network configuration
-3. Ensure contract is deployed correctly
-4. Review transaction on block explorer
-
----
-
-**Built with ❤️ for BlockMed Supervisor Demo**
+**Built with React, Vite, TailwindCSS, ethers.js, Solidity, Hardhat**

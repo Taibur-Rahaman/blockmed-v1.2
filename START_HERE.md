@@ -1,347 +1,122 @@
-# 🚀 START HERE - BlockMed V1.1
+# 🚀 START HERE – BlockMed V1.2
 
-## 👋 Welcome to BlockMed!
+## 👋 Welcome
 
-**Congratulations!** You now have a complete blockchain-based prescription management system ready for your supervisor demo.
+BlockMed is a **blockchain-based prescription and medicine verification** system. You can use it **without a wallet** (Dev Mode) or with **MetaMask**.
 
 ---
 
-## ⚡ Quick Navigation
+## ⚡ Quick navigation
 
-### 📍 **FIRST TIME?** → Read this file, then go to **[QUICK_START.md](./QUICK_START.md)**
-
-### 📚 All Documentation:
-
-| File | Purpose | When to Use |
+| File | Purpose | When to use |
 |------|---------|-------------|
-| **[QUICK_START.md](./QUICK_START.md)** | 5-minute setup guide | **Start here!** Get running fast |
-| **[README.md](./README.md)** | Complete overview | Full project documentation |
-| **[WEEKLY_UPDATES.md](./WEEKLY_UPDATES.md)** | Weekly feature updates | See what's new |
-| **[TEAM_UPDATE_SUPERVISOR.md](./TEAM_UPDATE_SUPERVISOR.md)** | Supervisor summary | For supervisor review |
-| **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** | Admin portal guide | Super admin features |
-| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Detailed deployment steps | Troubleshooting & production |
-| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues & fixes | When something breaks |
-| **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** | 22 test cases | Before your demo |
-| **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** | Project overview | Understanding the system |
-| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Technical architecture | Deep dive into design |
+| **[QUICK_START.md](./QUICK_START.md)** | Short setup | Get running quickly |
+| **[README.md](./README.md)** | Overview and scripts | Main project doc |
+| **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)** | How blockchain is used | Understand contract, connection, indexer |
+| **[BLOCKMED_V2_GUIDE.md](./BLOCKMED_V2_GUIDE.md)** | Features by role | Doctor, Pharmacist, Admin, etc. |
+| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Deploy contract | When you see “Contract not deployed” |
+| **[WALLET_SETUP.md](./WALLET_SETUP.md)** | Dev Mode & MetaMask | Connection and funding |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues | When something breaks |
+| **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** | Test cases | Before demo or release |
+| **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** | Project overview | High-level summary |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Architecture | Design and data flow |
+| **[BLOCKCHAIN_DATA_PERSISTENCE.md](./BLOCKCHAIN_DATA_PERSISTENCE.md)** | Where data lives | On-chain vs demo data |
+| **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** | Admin portal | Super admin features |
 
 ---
 
 ## 🎯 What is BlockMed?
 
-BlockMed is a **blockchain-based prescription management system** that allows doctors to:
-
-✅ Connect their **MetaMask wallet**  
-✅ Create **prescriptions stored on blockchain**  
-✅ Generate **QR codes** for each prescription  
-✅ Ensure **immutable, tamper-proof** records  
+- **Doctors** – Create prescriptions (patient hash, medicines, validity); store on blockchain or use demo mode.
+- **Pharmacists / Admin** – Verify and dispense prescriptions; verify/flag medicine batches.
+- **Manufacturers** – Create batches; recall if needed.
+- **Patients** – View history by patient ID (NID) / patient hash.
+- **Dev Mode** – Pre-funded Hardhat accounts, no MetaMask required.
+- **Demo mode** – Create and verify prescriptions/batches locally when the chain is not connected.
 
 ---
 
-## 🏃‍♂️ Get Started in 3 Steps
+## 🏃 Get started in 3 steps
 
-### Step 1: Read QUICK_START.md (3 min)
+### 1. Install and start (about 5 min)
+
 ```bash
-open QUICK_START.md
-```
-This will guide you through:
-- Installing dependencies
-- Deploying smart contract
-- Configuring MetaMask
-- Starting the app
-
-### Step 2: Test Everything (10 min)
-Follow **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** to verify all features work.
-
-### Step 3: Practice Demo (5 min)
-Run through the demo flow 2-3 times before presenting.
-
-**Total Time: ~18 minutes** ⏱️
-
----
-
-## 📂 Project Structure at a Glance
-
-```
-BlockMed V1.1/
-│
-├── 📄 START_HERE.md              ← You are here!
-├── 📄 QUICK_START.md             ← Read this next
-├── 📄 README.md                  ← Full documentation
-│
-├── 📁 contracts/
-│   └── BlockMed.sol              ← Smart contract
-│
-├── 📁 src/
-│   ├── components/
-│   │   └── MetaMaskConnect.jsx   ← Wallet connection
-│   ├── pages/
-│   │   ├── Dashboard.jsx         ← Doctor dashboard
-│   │   └── AddPrescription.jsx   ← Create prescription + QR
-│   └── utils/
-│       ├── contractABI.json      ← Contract interface
-│       └── config.js             ← ⚠️ UPDATE THIS after deploy
-│
-├── 📁 scripts/
-│   └── deploy.js                 ← Deploy contract
-│
-└── 📚 Documentation/
-    ├── DEPLOYMENT_GUIDE.md
-    ├── TESTING_CHECKLIST.md
-    ├── PROJECT_SUMMARY.md
-    └── ARCHITECTURE.md
+npm install
+npm run blockchain    # Terminal 1 – keep running
+npm run deploy:check # Terminal 2 – deploys and updates config
+npm run dev          # Terminal 2 – start app
 ```
 
----
+Or use **one command**: `npm run start` (runs blockchain, then deploy, then dev).
 
-## ✨ What You've Got
+### 2. Open the app
 
-### Frontend (React)
-- ✅ MetaMask wallet integration
-- ✅ Doctor dashboard
-- ✅ Prescription creation form
-- ✅ QR code generation
-- ✅ Beautiful, responsive UI
+- Go to **http://localhost:3000**
+- Click **🔧 Use Dev Mode (Recommended)** and choose an account (e.g. Admin #0 or Doctor #1). No MetaMask needed.
+- Or connect **MetaMask** (add Hardhat Local: RPC `http://127.0.0.1:8545`, Chain ID `31337`).
 
-### Backend (Blockchain)
-- ✅ Solidity smart contract
-- ✅ 4 main functions (add, get, verify, list)
-- ✅ Event logging
-- ✅ Immutable storage
+### 3. Enable Dev Mode in Settings (if you use Dev Mode)
 
-### Development Tools
-- ✅ Hardhat for local blockchain
-- ✅ Vite for fast dev server
-- ✅ ethers.js for Web3 interaction
-- ✅ Deployment scripts
-
-### Documentation
-- ✅ 10+ comprehensive guides
-- ✅ Weekly updates documentation
-- ✅ Testing checklist (22 tests)
-- ✅ Architecture diagrams
-- ✅ Troubleshooting guide
-- ✅ Supervisor updates
+- After login, go to **Settings** → **Blockchain Setup** → **Enable Dev Mode** and select account.
+- Dev Mode is also available on the **Login** page (“Use Dev Mode”).
 
 ---
 
-## 🎓 For Your Supervisor Demo
+## ⚠️ After deploying a new contract
 
-### Demo Flow (2-3 minutes):
+The deploy script updates **`src/utils/config.js`** and **`.env.local`** with the new contract address.
 
-1. **Show Connection** (30s)
-   - "Here's the BlockMed dashboard"
-   - Click "Connect MetaMask"
-   - Show wallet connection
+1. **Stop** the dev server (Ctrl+C).
+2. Run **`npm run dev`** again.
+3. **Hard-refresh** the browser (Ctrl+Shift+R or Cmd+Shift+R).
 
-2. **Create Prescription** (60s)
-   - Click "Create New Prescription"
-   - Enter demo data
-   - Submit to blockchain
-   - Show MetaMask confirmation
-
-3. **Show Results** (45s)
-   - Display transaction hash
-   - Show QR code
-   - Scan with phone (optional but impressive!)
-
-4. **Explain** (15s)
-   - "This prescription is now immutably stored on the blockchain"
-   - "The QR code can be used for verification"
-
-### Key Talking Points:
-- 🔒 **Security**: Blockchain ensures data integrity
-- 🔗 **Transparency**: Every transaction is traceable
-- 📱 **Convenience**: QR codes for easy sharing
-- 🚀 **Scalability**: Ready for patient/pharmacy portals
+Otherwise the app may still use the old address.
 
 ---
 
-## ⚠️ Critical Configuration
+## 📂 Project structure (main parts)
 
-**BEFORE RUNNING THE APP:**
-
-After deploying the contract, you **MUST** update this file:
-
-📄 **`src/utils/config.js`**
-
-```javascript
-export const CONTRACT_ADDRESS = 'PASTE_YOUR_DEPLOYED_ADDRESS_HERE'
+```
+BlockMed V1.2/
+├── START_HERE.md, README.md, QUICK_START.md
+├── contracts/BlockMedV2.sol     # Smart contract
+├── src/
+│   ├── pages/                   # LoginPage, CreatePrescription, PharmacyVerification, etc.
+│   ├── utils/contractHelper.js  # Contract read/write, Dev Mode vs Wallet
+│   ├── utils/devMode.js        # Dev Mode accounts and provider
+│   └── store/useStore.js       # User, demo prescriptions, etc.
+├── scripts/
+│   ├── check-and-deploy.cjs    # Deploy + update config and .env.local
+│   └── indexer/index.js        # Optional event indexer (port 3002)
+└── docs/                       # BLOCKCHAIN_HOW_IT_WORKS, PRIVACY_ONCHAIN, etc.
 ```
 
-**How to get the address:**
-1. Run `npm run blockchain` (Terminal 1)
-2. Run `npm run deploy` (Terminal 2)
-3. Copy the address from the output
-4. Paste it in `config.js`
-
 ---
 
-## 🐛 Troubleshooting Quick Fixes
+## 🐛 Quick fixes
 
 | Problem | Solution |
-|---------|----------|
-| "MetaMask not detected" | Install MetaMask extension |
-| "Transaction failed" | Check you're on "Hardhat Local" network |
-| "Invalid contract address" | Update `config.js` with deployed address |
-| QR not showing | Wait for transaction to confirm |
-| Can't connect wallet | Unlock MetaMask and refresh page |
+|--------|----------|
+| “Contract not deployed” | Run `npm run deploy:check` (Hardhat must be running). Restart dev server and hard-refresh. |
+| “Hardhat not running” | Run `npm run blockchain` in a terminal. |
+| No wallet / don’t want MetaMask | Use **Dev Mode** on login or in Settings → Blockchain Setup. |
+| “Only verified pharmacist…” | Use Admin (Dev Mode Account #0) to dispense, or verify the pharmacist user. |
 
-**More help:** See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) Section "Troubleshooting"
-
----
-
-## 📋 Pre-Demo Checklist
-
-**Do this 10 minutes before presenting:**
-
-- [ ] Hardhat node running (`npm run blockchain`)
-- [ ] Contract deployed (`npm run deploy`)
-- [ ] Config.js updated with contract address
-- [ ] Frontend running (`npm run dev`)
-- [ ] MetaMask installed and configured
-- [ ] Connected to "Hardhat Local" network
-- [ ] Test account has ETH (~10000 ETH)
-- [ ] Created at least one test prescription
-- [ ] Browser console shows no errors
-- [ ] Phone ready to scan QR (optional)
+More: **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** and **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**.
 
 ---
 
-## 🎯 Success Criteria
+## 📋 Pre-demo checklist
 
-Your demo is successful if:
-
-✅ MetaMask connects without errors  
-✅ Prescription form accepts input  
-✅ Transaction submits successfully  
-✅ Transaction hash appears  
-✅ QR code generates correctly  
-✅ You can explain the blockchain benefits  
+- [ ] `npm run blockchain` running
+- [ ] `npm run deploy:check` done (and dev server restarted if you just deployed)
+- [ ] `npm run dev` running, app at http://localhost:3000
+- [ ] Logged in with Dev Mode (e.g. Admin #0 or Doctor #1) or MetaMask
+- [ ] Created at least one prescription (on-chain or demo)
+- [ ] Verified/dispensed a prescription (Pharmacy Verification)
 
 ---
 
-## 📞 Need Help?
+**Next:** [QUICK_START.md](./QUICK_START.md) for the shortest path to a running app.
 
-### Common Issues & Where to Look:
-
-1. **Setup problems** → [QUICK_START.md](./QUICK_START.md)
-2. **Deployment issues** → [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-3. **Want to understand the code** → [ARCHITECTURE.md](./ARCHITECTURE.md)
-4. **Testing before demo** → [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)
-5. **General overview** → [README.md](./README.md)
-
----
-
-## 💡 Pro Tips
-
-### For a Great Demo:
-
-1. **Practice First** - Run through 2-3 times
-2. **Use Simple Data** - Easy to remember patient hashes
-3. **Have Backup** - Keep MetaMask unlocked before demo
-4. **Explain Simply** - Avoid too much technical jargon
-5. **Show Confidence** - You built something awesome!
-
-### Demo Data Suggestions:
-
-```
-Patient Hash: patient_demo_001
-IPFS Hash: QmDemoHashForSupervisor123
-```
-
-Easy to type and remember!
-
----
-
-## 🚀 Next Steps After Demo
-
-### Phase 3 Enhancements:
-- Patient dashboard
-- Pharmacy verification portal
-- QR code blockchain verification
-- Prescription history
-- Role-based access control
-
-### Technical Improvements:
-- Real IPFS integration
-- Testnet/mainnet deployment
-- Enhanced security
-- Mobile app
-
----
-
-## 📊 By the Numbers
-
-**Your Project:**
-- 📄 **21 files** created
-- 🔧 **~1700+ lines** of code
-- 📚 **6 documentation** files
-- ⚡ **5 minutes** to setup
-- 🎯 **22 test cases** covered
-- 🚀 **100% demo ready**
-
-**Technologies:**
-- React 18.2
-- ethers.js 6.9
-- Solidity 0.8.19
-- Hardhat 2.19
-- Vite 5.0
-
----
-
-## 🎉 You're Ready!
-
-### Your Next Actions:
-
-1. ✅ **Right Now**: Read [QUICK_START.md](./QUICK_START.md)
-2. ✅ **In 5 minutes**: Have app running
-3. ✅ **In 15 minutes**: Complete [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)
-4. ✅ **In 20 minutes**: Practice demo
-5. ✅ **Demo time**: Impress your supervisor! 🎓
-
----
-
-## 🏆 Final Motivation
-
-You now have a **production-quality blockchain application** with:
-- ✨ Modern tech stack
-- 🔒 Secure architecture
-- 📱 Beautiful UI/UX
-- 📚 Complete documentation
-- 🧪 Comprehensive testing
-
-**This is impressive work. You should be proud!**
-
----
-
-## 📖 Documentation Map
-
-```mermaid
-graph TB
-    Start[START_HERE.md] --> Quick[QUICK_START.md]
-    Quick --> Test[TESTING_CHECKLIST.md]
-    
-    Start --> Deep{Need More Info?}
-    Deep -->|Overview| Readme[README.md]
-    Deep -->|Technical| Arch[ARCHITECTURE.md]
-    Deep -->|Deployment| Deploy[DEPLOYMENT_GUIDE.md]
-    Deep -->|Summary| Summary[PROJECT_SUMMARY.md]
-    
-    Test --> Demo[Ready for Demo!]
-    
-    style Start fill:#667eea,color:#fff
-    style Quick fill:#10b981,color:#fff
-    style Test fill:#f59e0b,color:#fff
-    style Demo fill:#ec4899,color:#fff
-```
-
----
-
-**Now go to [QUICK_START.md](./QUICK_START.md) and let's get started! 🚀**
-
----
-
-*Built with ❤️ for your supervisor demo*  
-*Version 1.1 - November 11, 2025*  
-*Status: Ready to Rock! ✅*
+**Built with ❤️ – BlockMed V1.2**

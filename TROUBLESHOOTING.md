@@ -1,8 +1,8 @@
-# 🔧 Troubleshooting Guide - BlockMed V1.2
+# 🔧 Troubleshooting Guide – BlockMed V1.2
 
 ## 🎯 Common Issues & Solutions
 
-This guide consolidates all troubleshooting information for BlockMed V1.2.
+This guide consolidates troubleshooting for BlockMed V1.2. For how blockchain works (contract, Dev Mode, indexer), see **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)**.
 
 ---
 
@@ -91,17 +91,29 @@ npm run dev -- --port 3001
 ### Issue: "Please install MetaMask"
 **Solution**: Install MetaMask browser extension from [metamask.io](https://metamask.io)
 
+### Issue: "Contract not deployed"
+**Solutions**:
+- Run `npm run deploy:check` (with Hardhat node running: `npm run blockchain`)
+- Restart the dev server (`npm run dev`) and hard-refresh the browser (Ctrl+Shift+R / Cmd+Shift+R)
+- Deploy script updates `src/utils/config.js` and `.env.local`; the app reads from env
+
 ### Issue: "Transaction Failed"
 **Solutions**:
-- Check MetaMask is on correct network
-- Verify contract address in `config.js`
-- Ensure wallet has enough ETH for gas
+- Check MetaMask is on correct network (Hardhat Local, Chain ID 31337) or use **Dev Mode**
+- Verify contract address (run `npm run deploy:check` to update config and .env.local)
+- Ensure wallet has enough ETH for gas (Dev Mode accounts have 10,000 ETH)
 - Check contract is deployed correctly
 
 ### Issue: "Invalid contract address"
 **Solution**: 
-- Re-deploy contract
-- Update `CONTRACT_ADDRESS` in `/src/utils/config.js`
+- Run `npm run deploy:check` (Hardhat running); it updates `src/utils/config.js` and `.env.local`
+- Restart dev server and hard-refresh browser
+
+### Issue: "Only verified pharmacist can perform this action"
+**Solution**: 
+- Log in as **Admin** (Dev Mode Account #0) to dispense prescriptions and from batches
+- Or verify the pharmacist user: User Management → Verify, or `USER_ADDRESS=0x... npm run verify:user`
+- If you just redeployed, ensure you restarted the dev server and hard-refreshed (new contract has onlyPharmacistOrAdmin)
 
 ### Issue: Can't Connect Wallet
 **Solutions**:
@@ -176,9 +188,9 @@ npm run build
 4. Check if all files load (no 404 errors)
 
 ### Step 3: Verify Configuration
-1. Check `src/utils/config.js` has correct contract address
-2. Verify Hardhat node is running (if using local)
-3. Check MetaMask network matches contract network
+1. Check `src/utils/config.js` and `.env.local` (VITE_CONTRACT_ADDRESS) have the correct contract address (run `npm run deploy:check` to update)
+2. Verify Hardhat node is running (if using local): `npm run blockchain`
+3. Check MetaMask network matches (Hardhat Local, Chain ID 31337), or use **Dev Mode**
 
 ### Step 4: Test with Dev Mode
 1. Click "🔧 Use Dev Mode" in app

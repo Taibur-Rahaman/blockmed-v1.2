@@ -1,26 +1,33 @@
 # 🏗️ BlockMed Architecture Documentation
 
+For a **full explanation of how blockchain works** in this project (contract, connection layer, Dev Mode vs Wallet, indexer, diagrams), see **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)**.
+
+---
+
 ## System Architecture Overview
 
 ```mermaid
 graph TB
-    User[👨‍⚕️ Doctor] --> Browser[Web Browser]
+    User[👨‍⚕️ Doctor / Pharmacist] --> Browser[Web Browser]
+    Browser --> DevMode[🔧 Dev Mode]
     Browser --> MetaMask[🦊 MetaMask Wallet]
     Browser --> Frontend[⚛️ React Frontend]
     
     Frontend --> Router[React Router]
-    Router --> Connect[MetaMaskConnect]
+    Router --> Login[LoginPage]
     Router --> Dashboard[Dashboard Page]
-    Router --> Prescription[AddPrescription Page]
+    Router --> Prescription[CreatePrescription Page]
+    Router --> Pharmacy[PharmacyVerification Page]
     
     Prescription --> QR[QR Code Generator]
     
-    MetaMask --> Ethers[ethers.js]
-    Ethers --> Contract[📄 BlockMed Smart Contract]
+    DevMode --> contractHelper[contractHelper.js]
+    MetaMask --> contractHelper
+    contractHelper --> Contract[📄 BlockMedV2 Contract]
     
     Contract --> Blockchain[(🔗 Blockchain)]
     
-    Prescription --> IPFS[IPFS Storage - Future]
+    Prescription --> IPFS[IPFS / JSON payload]
     
     style User fill:#667eea,color:#fff
     style MetaMask fill:#f6851b,color:#fff
@@ -34,10 +41,10 @@ graph TB
 ```mermaid
 graph LR
     A[App.jsx] --> B{Connected?}
-    B -->|No| C[MetaMaskConnect]
+    B -->|No| C[LoginPage - Dev Mode or MetaMask]
     B -->|Yes| D[Dashboard]
-    D --> E[AddPrescription]
-    E --> F[Submit to Blockchain]
+    D --> E[CreatePrescription]
+    E --> F[Submit to Blockchain or Demo]
     F --> G[Generate QR Code]
     G --> H[Display Result]
     
@@ -78,26 +85,27 @@ sequenceDiagram
     UI->>Doctor: Show QR + Hash
 ```
 
-## Smart Contract Structure
+## Smart Contract Structure (BlockMedV2)
 
 ```mermaid
 graph TB
-    BlockMed[BlockMed Contract]
+    BlockMed[BlockMedV2 Contract]
     
     BlockMed --> Data[State Variables]
     BlockMed --> Functions[Functions]
     BlockMed --> Events[Events]
     
-    Data --> Count[prescriptionCount]
-    Data --> Mapping[prescriptions mapping]
+    Data --> Users[users, userAddresses]
+    Data --> Presc[prescriptions, prescriptionCount, patientPrescriptions, doctorPrescriptions]
+    Data --> Batches[medicineBatches, batchNumberToId, flaggedBatches, recalledBatches]
     
-    Functions --> Add[addPrescription]
-    Functions --> Get[getPrescription]
-    Functions --> Verify[verifyPrescription]
-    Functions --> GetByDoc[getPrescriptionsByDoctor]
+    Functions --> Add[addPrescription / createPrescription]
+    Functions --> Get[getPrescription, getPrescriptionsByPatient, getPrescriptionsByDoctor]
+    Functions --> Dispense[dispensePrescription - Pharmacist or Admin]
+    Functions --> Batch[createMedicineBatch, verifyBatch, dispenseFromBatch, recallBatch, flagBatch]
     
-    Events --> Added[PrescriptionAdded]
-    Events --> Verified[PrescriptionVerified]
+    Events --> PrescriptionCreated[PrescriptionCreated, PrescriptionDispensed]
+    Events --> BatchEvents[BatchCreated, BatchRecalled, BatchFlagged, FakeMedicineAlert]
     
     style BlockMed fill:#627eea,color:#fff
     style Functions fill:#10b981,color:#fff
@@ -110,13 +118,14 @@ graph TB
 graph TB
     App[App.jsx - Router & State]
     
-    App --> Connect[MetaMaskConnect.jsx]
+    App --> Login[LoginPage.jsx - Dev Mode or Wallet]
+    App --> Layout[Layout.jsx]
     App --> Dash[Dashboard.jsx]
-    App --> Presc[AddPrescription.jsx]
+    App --> Presc[CreatePrescription.jsx]
+    App --> Pharmacy[PharmacyVerification.jsx]
     
-    Connect --> ConnectUI[Connection UI]
-    ConnectUI --> DetectMM[Detect MetaMask]
-    ConnectUI --> ShowAddr[Show Address]
+    Login --> ConnectUI[Dev Mode or MetaMask]
+    ConnectUI --> contractHelper[contractHelper - getReadContract / getWriteContract]
     
     Dash --> WalletInfo[Wallet Info Display]
     Dash --> CreateBtn[Create Prescription Button]

@@ -1,26 +1,35 @@
-# 🏥 BlockMed V2 - Complete System Guide
+# 🏥 BlockMed V2 – Complete System Guide
 
-## ✅ Current Status
-- **Smart Contract**: Deployed at `0x5FbDB2315678afecb367f032d93F642f64180aa3`
-- **Hardhat Node**: Running at `http://127.0.0.1:8545`
-- **Frontend**: Running at `http://localhost:3000`
+## ✅ Current status
+
+- **Smart contract**: BlockMedV2 – address from `VITE_CONTRACT_ADDRESS` or `src/utils/config.js` (updated by deploy script)
+- **Hardhat node**: `http://127.0.0.1:8545` (Chain ID 31337)
+- **Frontend**: `http://localhost:3000`
+- **Indexer** (optional): `npm run indexer` – HTTP API on port 3002
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick start
 
-### 1. Access the Application
-Open your browser and go to: **http://localhost:3000**
+### 1. Access the app
 
-### 2. Connect MetaMask
-1. Install MetaMask browser extension if you haven't
-2. Click "Connect Wallet" button
-3. The app will automatically switch to Hardhat Local network (Chain ID: 31337)
+Open **http://localhost:3000**
 
-### 3. Import Test Account (for testing with funds)
-From the Hardhat node output, import one of the test accounts into MetaMask:
-- Private Key: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
-- This account has 10000 ETH for testing
+### 2. Connect (Dev Mode or MetaMask)
+
+**Dev Mode (recommended – no wallet):**
+
+1. Click **"🔧 Use Dev Mode (Recommended)"** on the login page
+2. Select an account (Admin #0, Doctor #1, Pharmacist #2, etc.)
+3. Each has 10,000 ETH. No MetaMask needed.
+
+Or enable Dev Mode after login: **Settings → Blockchain Setup → Enable Dev Mode**.
+
+**MetaMask:**
+
+1. Install MetaMask; click "Connect Wallet"
+2. Add Hardhat Local: RPC `http://127.0.0.1:8545`, Chain ID `31337`
+3. Import a test account from Hardhat node output (e.g. private key for Account #0)
 
 ---
 
@@ -37,10 +46,11 @@ From the Hardhat node output, import one of the test accounts into MetaMask:
 
 ### 🏪 Pharmacist Role
 - Verify prescriptions by ID or QR scan
-- Mark prescriptions as dispensed
+- Mark prescriptions as dispensed (on-chain or demo)
 - Verify medicine batches for authenticity
 - Flag suspicious batches
 - View prescription details and validity
+- **Admin** can also dispense prescriptions and from batches (onlyPharmacistOrAdmin)
 
 ### 👤 Patient Role
 - View all personal prescriptions using Patient ID
@@ -124,57 +134,71 @@ The system uses the **FDA OpenFDA API** for real medicine data:
 
 ---
 
-## 🛠 Development Commands
+## 🛠 Development commands
 
 ```bash
 # Start Hardhat local blockchain
 npm run blockchain
 
-# Deploy smart contract
-npm run deploy
+# Deploy contract (check first, or force redeploy)
+npm run deploy:check   # Deploy only if no contract at address; updates config + .env.local
+npm run deploy        # Always redeploy (e.g. after Solidity changes)
 
-# Start frontend development server
+# Start frontend
 npm run dev
+
+# One command: blockchain + deploy + dev
+npm run start
+
+# Run contract tests
+npm run test:blockchain
+npm run test:all
+
+# Optional event indexer (API on port 3002)
+npm run indexer
 
 # Build for production
 npm run build
 ```
 
+**After a new deploy:** Restart the dev server and hard-refresh the browser so the app uses the new contract address.
+
 ---
 
-## 📁 Project Structure
+## 📁 Project structure
 
 ```
 BlockMed V1.2/
 ├── contracts/
-│   └── BlockMedV2.sol       # Enhanced smart contract
+│   └── BlockMedV2.sol       # Smart contract (RBAC, prescriptions, batches)
 ├── src/
 │   ├── components/
-│   │   └── Layout.jsx       # Main layout with sidebar
+│   │   ├── Layout.jsx
+│   │   ├── BlockchainInfo.jsx
+│   │   └── ErrorBoundary.jsx
 │   ├── pages/
 │   │   ├── LoginPage.jsx
 │   │   ├── Dashboard.jsx
 │   │   ├── CreatePrescription.jsx
 │   │   ├── PharmacyVerification.jsx
-│   │   ├── PatientPortal.jsx
-│   │   ├── MedicineManagement.jsx
-│   │   ├── BatchManagement.jsx
-│   │   ├── UserManagement.jsx
-│   │   ├── Analytics.jsx
-│   │   └── Settings.jsx
-│   ├── store/
-│   │   └── useStore.js      # Zustand state management
-│   ├── i18n/
-│   │   ├── index.js
-│   │   └── translations.js  # English & Bangla
-│   ├── utils/
-│   │   ├── config.js
-│   │   ├── helpers.js
-│   │   └── contractABI.json
+│   │   ├── PrescriptionTemplates.jsx
+│   │   ├── PatientPortal.jsx, PatientHistory.jsx
+│   │   ├── MedicineManagement.jsx, BatchManagement.jsx
+│   │   ├── UserManagement.jsx, Analytics.jsx, Settings.jsx
+│   │   └── ActivityLog.jsx
+│   ├── store/useStore.js    # Zustand (user, demo prescriptions, etc.)
+│   ├── hooks/useBlockchain.js
+│   ├── i18n/                # English & Bangla
+│   ├── utils/               # config, contractHelper, devMode, helpers, blockchainData
 │   ├── App.jsx
-│   └── index.css            # TailwindCSS styles
+│   └── index.css
 ├── scripts/
-│   └── deploy.cjs
+│   ├── check-and-deploy.cjs # Deploy + update config + .env.local
+│   ├── indexer/index.js     # Event indexer (port 3002)
+│   ├── verify-user.cjs
+│   └── test-*.mjs, test-local.cjs
+├── docs/                    # BLOCKCHAIN_HOW_IT_WORKS, PRIVACY_ONCHAIN, etc.
+├── test/BlockMedV2.test.cjs
 ├── hardhat.config.cjs
 ├── tailwind.config.js
 ├── vite.config.js
@@ -207,11 +231,11 @@ BlockMed V1.2/
 
 ## 📞 Support
 
-For issues:
-1. Check browser console for errors
-2. Verify MetaMask is on correct network
-3. Ensure contract is deployed
-4. Check Hardhat node is running
+- **Contract not deployed** → Run `npm run deploy:check` (Hardhat running). Restart dev server and hard-refresh.
+- **No wallet** → Use **Dev Mode** on login or in Settings → Blockchain Setup.
+- **Only verified pharmacist** → Log in as Admin (Dev Mode Account #0) to dispense, or verify the pharmacist user via User Management or `npm run verify:user USER_ADDRESS=0x...`.
+
+See **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** and **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)** for more.
 
 ---
 

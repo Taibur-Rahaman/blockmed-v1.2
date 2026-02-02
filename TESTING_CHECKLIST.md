@@ -1,27 +1,23 @@
-# 🧪 BlockMed Testing Checklist - Supervisor Demo
+# 🧪 BlockMed Testing Checklist – BlockMed V1.2
 
 ## Pre-Demo Setup Verification
 
 ### ✅ Environment Check
 - [ ] Node.js installed (v16+)
 - [ ] npm working correctly
-- [ ] MetaMask extension installed
 - [ ] All dependencies installed (`npm install`)
+- [ ] MetaMask extension installed (optional – Dev Mode does not require it)
 
 ### ✅ Contract Deployment
-- [ ] Hardhat node running in Terminal 1
-- [ ] Contract deployed successfully
-- [ ] Contract address copied from deployment output
-- [ ] Contract address updated in `src/utils/config.js`
+- [ ] Hardhat node running in Terminal 1 (`npm run blockchain`)
+- [ ] Contract deployed: `npm run deploy:check` (in Terminal 2)
+- [ ] Deploy script updated `src/utils/config.js` and `.env.local`
+- [ ] Dev server restarted after deploy (`npm run dev`) and browser hard-refreshed (Ctrl+Shift+R / Cmd+Shift+R)
 
-### ✅ MetaMask Configuration
-- [ ] Hardhat Local network added to MetaMask
-- [ ] Network details correct:
-  - Chain ID: 31337
-  - RPC: http://127.0.0.1:8545
-- [ ] Test account imported (Account #0 from hardhat node)
-- [ ] Account shows ~10000 ETH balance
-- [ ] MetaMask switched to "Hardhat Local" network
+### ✅ Connection (Dev Mode or MetaMask)
+- [ ] **Dev Mode:** Login page → "🔧 Use Dev Mode (Recommended)" → select account (e.g. Admin #0, Doctor #1)
+- [ ] Or **MetaMask:** Hardhat Local added (Chain ID 31337, RPC http://127.0.0.1:8545); test account imported; ~10000 ETH
+- [ ] Or **Settings → Blockchain Setup → Enable Dev Mode** after login
 
 ### ✅ Frontend Launch
 - [ ] Development server running (`npm run dev`)
@@ -33,34 +29,28 @@
 
 ## Functional Testing
 
-### 🔌 Test Case 1: MetaMask Detection
+### 🔌 Test Case 1: Connection (Dev Mode or MetaMask)
 **Steps:**
-1. Open app without MetaMask
-2. Observe error message
+1. Open app; if no MetaMask, use Dev Mode on login page
+2. Click "🔧 Use Dev Mode (Recommended)" and select an account, OR connect MetaMask
 
 **Expected Result:**
-- [ ] Warning message: "MetaMask not detected"
-- [ ] Link/message to install MetaMask shown
+- [ ] Dev Mode: account selected, no MetaMask required; or MetaMask connects
+- [ ] If no wallet and no Dev Mode: message to connect wallet or enable Dev Mode
 
 **Status:** ⬜ Pass / ⬜ Fail
 
 ---
 
-### 🦊 Test Case 2: MetaMask Connection
+### 🦊 Test Case 2: Login (Dev Mode or Wallet)
 **Steps:**
-1. Ensure MetaMask installed and unlocked
-2. Click "Connect MetaMask" button
-3. MetaMask popup appears
-4. Click "Next" then "Connect"
+1. Use Dev Mode: click "Use Dev Mode", select account (e.g. Admin #0 or Doctor #1); OR connect MetaMask
+2. If new user: register (name, license, role); Admin can verify via User Management or `npm run verify:user`
 
 **Expected Result:**
-- [ ] MetaMask popup shows immediately
-- [ ] Connection successful
-- [ ] Button changes to "Connected ✅"
-- [ ] Wallet address displayed
-- [ ] Dashboard page loads automatically
-
-**Actual Wallet Address:** _________________
+- [ ] Dev Mode: account selected, dashboard loads with role
+- [ ] Wallet: connection successful; wallet address displayed; dashboard loads
+- [ ] User role and verification status shown (Admin can dispense; verified Doctor can create prescriptions)
 
 **Status:** ⬜ Pass / ⬜ Fail
 

@@ -1,20 +1,22 @@
-# 🚀 Contract Deployment Guide
+# 🚀 Contract Deployment Guide – BlockMed V1.2
 
-## Quick Deploy (Recommended)
+## Quick deploy (recommended)
 
-If you get "Contract not deployed" error, run:
+If you see **"Contract not deployed"**, run:
 
 ```bash
 npm run deploy:check
 ```
 
-This will:
-1. ✅ Check if contract is already deployed
-2. ✅ Deploy if needed
-3. ✅ Automatically update `src/utils/config.js`
-4. ✅ Show you the contract address
+(with Hardhat node running: `npm run blockchain`)
 
-**That's it!** Just refresh your browser after running this.
+This will:
+1. ✅ Check if a contract is already at the configured address
+2. ✅ Deploy only if needed
+3. ✅ Update `src/utils/config.js` with the new address
+4. ✅ Update `.env.local` with `VITE_CONTRACT_ADDRESS`
+
+**After deploy:** Stop the dev server (Ctrl+C), run `npm run dev` again, and **hard-refresh** the browser (Ctrl+Shift+R or Cmd+Shift+R) so the new address is used.
 
 ---
 
@@ -28,33 +30,24 @@ npm run blockchain
 
 Keep this terminal running!
 
-### Step 2: Deploy Contract
+### Step 2: Deploy contract
 
 In a **new terminal**, run:
-
-```bash
-npm run deploy
-```
-
-Or use the check-and-deploy script:
 
 ```bash
 npm run deploy:check
 ```
 
-### Step 3: Update Config (if needed)
+- **deploy:check** – Deploys only if no contract at configured address; updates `config.js` and `.env.local`.
+- **deploy** – Always redeploys (FORCE_DEPLOY=1) and updates `config.js` and `.env.local`. Use after changing the Solidity contract.
 
-If you used `npm run deploy` (not `deploy:check`), you need to manually update:
+### Step 3: Restart dev server and refresh browser
 
-**File:** `src/utils/config.js`
+1. Stop the dev server (Ctrl+C) if it is running.
+2. Run `npm run dev` again.
+3. Hard-refresh the browser (Ctrl+Shift+R or Cmd+Shift+R).
 
-```javascript
-export const CONTRACT_ADDRESS = 'YOUR_DEPLOYED_ADDRESS_HERE'
-```
-
-### Step 4: Refresh Browser
-
-Refresh your browser and the contract should be ready!
+The app will then use the new contract address from `.env.local` / `config.js`.
 
 ---
 
@@ -93,23 +86,19 @@ Keep this running in a separate terminal.
 
 ---
 
-## Deployment Scripts
+## Deployment scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run deploy:check` | ✅ **Best!** Checks and deploys if needed, auto-updates config |
-| `npm run deploy` | Deploys contract (manual config update needed) |
-| `npm run blockchain` | Starts Hardhat node |
+| `npm run deploy:check` | ✅ **Recommended.** Deploy only if no contract at address; updates config + .env.local |
+| `npm run deploy` | Always redeploy (e.g. after Solidity changes); updates config + .env.local |
+| `npm run blockchain` | Start Hardhat node (localhost:8545) |
 
 ---
 
-## Contract Address
+## Contract address
 
-After deployment, the contract address will be shown in the terminal and automatically saved to `src/utils/config.js`.
-
-**Default Hardhat address:** `0x5FbDB2315678afecb367f032d93F642f64180aa3`
-
-This is the deterministic address that Hardhat uses for the first deployment.
+After deployment, the address is shown in the terminal and saved to **`src/utils/config.js`** and **`.env.local`** (VITE_CONTRACT_ADDRESS). The app reads from env; default in code may be overridden by `.env.local`.
 
 ---
 

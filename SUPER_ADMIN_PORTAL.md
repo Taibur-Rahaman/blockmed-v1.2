@@ -1,8 +1,10 @@
-# 🔐 Super Admin User Control Portal - Complete Guide
+# 🔐 Super Admin User Control Portal – Complete Guide
 
 ## 🎯 Feature Overview
 
 Enhanced **Super Admin User Control Portal** with real-time login tracking, comprehensive account control, and granular access management. Super Administrators can monitor active users in real-time and control their access to system features.
+
+**BlockMed V1.2:** Admin can also **dispense** prescriptions and from batches (onlyPharmacistOrAdmin in BlockMedV2). Use **Dev Mode** (Settings → Blockchain Setup or login page) for Admin account #0 when testing locally.
 
 ---
 
