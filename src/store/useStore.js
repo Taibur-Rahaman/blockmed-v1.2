@@ -124,6 +124,15 @@ export const useStore = create(
       demoBatchesVersion: 0,
       incrementDemoBatchesVersion: () => set((state) => ({ demoBatchesVersion: state.demoBatchesVersion + 1 })),
 
+      // Demo prescriptions (stored locally when blockchain unavailable)
+      demoPrescriptions: [],
+      demoPrescriptionsVersion: 0,
+      addDemoPrescription: (prescription) => set((state) => ({
+        demoPrescriptions: [prescription, ...state.demoPrescriptions],
+        demoPrescriptionsVersion: state.demoPrescriptionsVersion + 1,
+      })),
+      clearDemoPrescriptions: () => set({ demoPrescriptions: [], demoPrescriptionsVersion: 0 }),
+
       // ============================================
       // UI State
       // ============================================

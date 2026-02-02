@@ -17,7 +17,7 @@ import {
 import { useStore } from '../store/useStore'
 import { usePrescriptionStore } from '../store/useStore'
 import { GENDER_OPTIONS, VALIDITY_OPTIONS, API } from '../utils/config'
-import { getWriteContract, getCurrentAccount, isBlockchainReady, getContractAddress } from '../utils/contractHelper'
+import { getWriteContract, getCurrentAccount, isBlockchainReady, getContractAddress, getFriendlyErrorMessage } from '../utils/contractHelper'
 import { 
   calculateAge, generatePatientHash, copyToClipboard, formatDate,
   isUserRestricted, getUserRestriction
@@ -28,8 +28,9 @@ import staticMedicines from '../data/medicines.json'
 const CreatePrescription = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { account, language, logout } = useStore()
+  const { account, language, logout, addDemoPrescription, demoPrescriptionsVersion } = useStore()
   const prescriptionStore = usePrescriptionStore()
+  const [usingDemoMode, setUsingDemoMode] = useState(false)
   const printRef = useRef()
   
   const [showTemplateModal, setShowTemplateModal] = useState(false)
@@ -328,7 +329,7 @@ const CreatePrescription = () => {
     setCurrentStep(5)
   }
 
-  // Submit to blockchain
+  // Submit to blockchain (or demo mode)
   const handleSubmit = async () => {
     if (!patientHash || !ipfsHash) {
       toast.error('Please generate prescription first')
@@ -340,8 +341,45 @@ const CreatePrescription = () => {
     try {
       // Check if blockchain is ready
       const ready = await isBlockchainReady()
+      
+      // Demo mode: save locally when blockchain unavailable
       if (!ready.ready) {
-        toast.error(`Blockchain not ready: ${ready.error}\n\nPlease connect a wallet or enable Dev Mode.`)
+        const demoId = Date.now()
+        const demoPrescription = {
+          id: demoId,
+          patientHash,
+          ipfsHash,
+          patient,
+          symptoms,
+          diagnosis,
+          medicines,
+          tests,
+          advice,
+          followUp,
+          validityDays,
+          createdAt: new Date().toISOString(),
+          doctor: account || 'demo-doctor',
+          isDemo: true,
+        }
+        
+        addDemoPrescription(demoPrescription)
+        
+        setGeneratedData({
+          patientHash,
+          ipfsHash,
+          qrData: JSON.stringify({
+            prescriptionId: demoId,
+            patientHash,
+            doctor: account || 'demo-doctor',
+            isDemo: true,
+          }),
+          prescriptionId: demoId,
+          txHash: `demo-${demoId}`,
+          blockNumber: null,
+        })
+        
+        setUsingDemoMode(true)
+        toast.success(language === 'bn' ? 'প্রেসক্রিপশন সংরক্ষিত (ডেমো মোড)' : 'Prescription saved (demo mode)')
         setIsSubmitting(false)
         return
       }
@@ -388,21 +426,7 @@ const CreatePrescription = () => {
       toast.success(`Prescription #${newId} created on blockchain!`)
     } catch (error) {
       console.error('Submission error:', error)
-      
-      // Better error messages
-      let errorMessage = 'Failed to submit prescription'
-      
-      if (error.message?.includes('Not connected') || error.message?.includes('could not coalesce')) {
-        errorMessage = 'Not connected to blockchain. Please:\n1. Make sure Hardhat is running (npm run blockchain)\n2. Connect a wallet or enable Dev Mode'
-      } else if (error.message?.includes('user rejected')) {
-        errorMessage = 'Transaction was rejected'
-      } else if (error.reason) {
-        errorMessage = error.reason
-      } else if (error.message) {
-        errorMessage = error.message
-      }
-      
-      toast.error(errorMessage)
+      toast.error(getFriendlyErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }
@@ -1152,19 +1176,38 @@ const CreatePrescription = () => {
                 )}
               </div>
 
-              {/* Blockchain: how it works + proof */}
+              {/* Blockchain proof or demo mode indicator */}
               {txHash && (
                 <div className="card">
-                  <BlockchainInfo
-                    title="Saved on blockchain"
-                    prescriptionId={prescriptionId}
-                    txHash={txHash}
-                    blockNumber={blockNumber}
-                    contractAddress={getContractAddress()}
-                  />
-                  <p className="text-xs text-gray-400 mt-3">
-                    This prescription is stored on-chain. The transaction hash and block prove it; anyone can verify.
-                  </p>
+                  {usingDemoMode || txHash.startsWith('demo-') ? (
+                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FiAlertCircle className="text-amber-400" />
+                        <span className="font-medium text-amber-300">Demo Mode</span>
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        This prescription is saved locally (not on blockchain). To save on-chain:
+                      </p>
+                      <ol className="text-sm text-gray-400 mt-2 list-decimal list-inside space-y-1">
+                        <li>Run <code className="bg-black/30 px-1.5 py-0.5 rounded">npx hardhat node</code></li>
+                        <li>Run <code className="bg-black/30 px-1.5 py-0.5 rounded">npm run deploy</code></li>
+                        <li>Enable Dev Mode in Settings, then try again</li>
+                      </ol>
+                    </div>
+                  ) : (
+                    <>
+                      <BlockchainInfo
+                        title="Saved on blockchain"
+                        prescriptionId={prescriptionId}
+                        txHash={txHash}
+                        blockNumber={blockNumber}
+                        contractAddress={getContractAddress()}
+                      />
+                      <p className="text-xs text-gray-400 mt-3">
+                        This prescription is stored on-chain. The transaction hash and block prove it; anyone can verify.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
