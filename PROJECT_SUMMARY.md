@@ -54,19 +54,46 @@ BlockMed V1.2/
 │
 ├── src/
 │   ├── components/
-│   │   └── MetaMaskConnect.jsx         # Wallet connection component
+│   │   ├── Layout.jsx                  # Main layout with sidebar
+│   │   ├── BlockchainInfo.jsx         # Blockchain status component
+│   │   └── ErrorBoundary.jsx          # Error boundary
 │   │
 │   ├── pages/
-│   │   ├── Dashboard.jsx               # Main doctor dashboard
-│   │   └── AddPrescription.jsx         # Prescription form + QR
+│   │   ├── LoginPage.jsx              # Login (Dev Mode or Wallet)
+│   │   ├── Dashboard.jsx               # Main dashboard
+│   │   ├── CreatePrescription.jsx     # Prescription creation (5 steps)
+│   │   ├── PharmacyVerification.jsx   # Verify & dispense prescriptions/batches
+│   │   ├── PrescriptionTemplates.jsx  # Save/reuse templates
+│   │   ├── PatientPortal.jsx         # Patient view
+│   │   ├── PatientHistory.jsx        # Patient history
+│   │   ├── MedicineManagement.jsx    # Medicine CRUD
+│   │   ├── BatchManagement.jsx        # Batch creation/management
+│   │   ├── UserManagement.jsx         # Admin user management
+│   │   ├── Analytics.jsx              # System analytics
+│   │   ├── ActivityLog.jsx            # Event log
+│   │   └── Settings.jsx               # Settings & Dev Mode
+│   │
+│   ├── store/
+│   │   └── useStore.js                # Zustand state (user, demo data)
+│   │
+│   ├── hooks/
+│   │   └── useBlockchain.js           # Blockchain connection hook
 │   │
 │   ├── utils/
-│   │   ├── contractABI.json            # Smart contract ABI
-│   │   └── config.js                   # Contract address & network config
+│   │   ├── config.js                   # Contract address & networks
+│   │   ├── contractHelper.js          # Contract read/write (Dev Mode vs Wallet)
+│   │   ├── devMode.js                 # Dev Mode accounts & provider
+│   │   ├── blockchainData.js         # Fetch prescriptions/batches
+│   │   ├── helpers.js                 # Utilities (patientHash, etc.)
+│   │   ├── provider.js                # Provider utilities
+│   │   ├── walletFund.js             # Wallet funding
+│   │   └── contractABI.json          # Contract ABI
 │   │
-│   ├── App.jsx                         # Main app with routing
-│   ├── main.jsx                        # React entry point
-│   └── index.css                       # Global styles
+│   ├── i18n/                          # English & Bangla translations
+│   ├── data/                          # medicines.json, demoBatches.js
+│   ├── App.jsx                        # Main router
+│   ├── main.jsx                       # React entry
+│   └── index.css                      # TailwindCSS styles
 │
 ├── index.html                          # HTML template
 ├── package.json                        # Dependencies
@@ -104,90 +131,84 @@ BlockMed V1.2/
 
 ---
 
-## 🔐 Smart Contract Functions
+## 🔐 Smart Contract Functions (BlockMedV2)
 
-### BlockMed.sol
+### BlockMedV2.sol
 
-**State Variables:**
-- `prescriptionCount` - Total number of prescriptions
-- `prescriptions` - Mapping of prescription ID to Prescription struct
+**RBAC Roles:** Admin, Doctor, Pharmacist, Manufacturer, Patient, Regulator
 
-**Main Functions:**
+**User Management:**
+- `registerUser(name, licenseNumber, role)` - Register with role
+- `verifyUser(address)` - Admin verifies user
+- `deactivateUser(address)` - Admin deactivates
+- `getUser(address)` - Get user info
 
-1. **addPrescription(patientHash, ipfsHash)**
-   - Adds new prescription to blockchain
-   - Emits PrescriptionAdded event
-   - Returns prescription ID
+**Prescription Functions:**
+- `createPrescription(patientHash, ipfsHash, validityDays, digitalSignature)` - Doctor creates
+- `addPrescription(patientHash, ipfsHash)` - Legacy (auto-registers as doctor)
+- `updatePrescription(id, newIpfsHash, reason)` - Doctor updates (creates version)
+- `dispensePrescription(id)` - Pharmacist or Admin dispenses
+- `revokePrescription(id, reason)` - Doctor or Admin revokes
+- `getPrescription(id)` - Get prescription
+- `getPrescriptionsByPatient(patientHash)` - Get by patient
+- `getPrescriptionsByDoctor(doctor)` - Get by doctor
+- `getPrescriptionVersions(id)` - Version history
 
-2. **getPrescription(id)**
-   - Retrieves prescription by ID
-   - Returns all prescription details
-
-3. **verifyPrescription(id)**
-   - Marks prescription as verified
-   - Emits PrescriptionVerified event
-
-4. **getPrescriptionsByDoctor(doctor)**
-   - Returns array of prescription IDs for a doctor
+**Medicine Batch Functions:**
+- `createMedicineBatch(...)` - Manufacturer creates
+- `dispenseFromBatch(batchId, quantity)` - Pharmacist or Admin dispenses
+- `recallBatch(batchId, reason)` - Manufacturer/Regulator/Admin recalls
+- `flagBatch(batchId, reason)` - Any verified user flags
+- `verifyBatch(batchNumber)` - Verify authenticity
+- `getMedicineBatch(id)`, `getBatchByNumber(batchNumber)` - Get batch
 
 **Events:**
-- `PrescriptionAdded` - When new prescription is created
-- `PrescriptionVerified` - When prescription is verified
+- PrescriptionCreated, PrescriptionUpdated, PrescriptionDispensed, PrescriptionRevoked
+- BatchCreated, BatchDispensed, BatchRecalled, BatchFlagged, FakeMedicineAlert
+- UserRegistered, UserVerified, UserDeactivated
 
 ---
 
-## 🎨 UI Components
+## 🎨 UI Components & Pages
 
-### 1. MetaMaskConnect.jsx
-**Purpose:** Handle wallet connection  
-**Features:**
-- Detect MetaMask installation
-- Request account access
-- Show connection status
-- Handle account changes
+### Components
+- **Layout.jsx** - Main layout with sidebar navigation, blockchain status banner
+- **BlockchainInfo.jsx** - Connection status, network info, Dev Mode indicator
+- **ErrorBoundary.jsx** - Catches React errors, shows friendly messages
 
-### 2. Dashboard.jsx
-**Purpose:** Main landing page after connection  
-**Features:**
-- Display connected wallet
-- Show system features
-- Navigation to prescription creation
-- Disconnect wallet option
-
-### 3. AddPrescription.jsx
-**Purpose:** Create and submit prescriptions  
-**Features:**
-- Form inputs (Patient Hash, IPFS Hash)
-- Validation
-- Blockchain transaction handling
-- QR code generation
-- Transaction hash display
-- Success/error messages
+### Key Pages
+- **LoginPage.jsx** - Dev Mode or MetaMask connection; user registration
+- **Dashboard.jsx** - Stats, quick actions, role-based navigation
+- **CreatePrescription.jsx** - 5-step form (patient, symptoms, medicines, tests, generate); templates; demo mode
+- **PharmacyVerification.jsx** - Verify prescriptions (ID/QR/patient hash); dispense; verify batches; QR scan
+- **PrescriptionTemplates.jsx** - Save/reuse prescription templates
+- **PatientPortal.jsx** / **PatientHistory.jsx** - View prescriptions by patient hash/NID
+- **BatchManagement.jsx** - Create/manage medicine batches (Manufacturer)
+- **UserManagement.jsx** - Admin: verify/deactivate users, restrictions, access control
+- **Analytics.jsx** - System statistics, charts
+- **ActivityLog.jsx** - Blockchain events log
+- **Settings.jsx** - User preferences, Dev Mode setup, network info
 
 ---
 
 ## 🔄 User Flow
 
 ```
-1. Load App
+1. Load App → LoginPage
    ↓
-2. Connect MetaMask
+2. Connect (Dev Mode or MetaMask)
    ↓
-3. Dashboard (show wallet address)
+3. Register/Login → Dashboard
    ↓
-4. Click "Create New Prescription"
+4. Create Prescription (5 steps) OR Use Template
    ↓
-5. Fill Form (Patient Hash + IPFS Hash)
+5. Submit → Blockchain (or save as demo)
    ↓
-6. Submit → MetaMask Confirmation
+6. Pharmacy Verification → Scan QR or Enter ID
    ↓
-7. Transaction to Blockchain
+7. Dispense Prescription (Pharmacist/Admin)
    ↓
-8. Show Transaction Hash
-   ↓
-9. Generate QR Code
-   ↓
-10. Option: Create Another or Return to Dashboard
+8. Batch Verification → Verify/Flag/Recall
 ```
 
 ---
@@ -203,8 +224,10 @@ BlockMed V1.2/
 **Commands:**
 ```bash
 npm run blockchain    # Start Hardhat node
-npm run deploy        # Deploy contract
+npm run deploy:check  # Deploy if needed (updates config + .env.local)
+npm run deploy       # Force redeploy (after Solidity changes)
 npm run dev          # Start frontend
+npm run start        # One command: blockchain + deploy + dev
 ```
 
 ### Option 2: Testnet (Sepolia/Goerli)
@@ -493,9 +516,9 @@ npm run dev          # Start frontend
 
 ## 🎉 Conclusion
 
-**BlockMed V1.1 is complete and demo-ready!**
+**BlockMed V1.2 / V2 is complete and ready for use!**
 
-You now have a fully functional blockchain-based prescription system with:
+You now have a fully functional blockchain-based prescription and medicine verification system with:
 - Secure MetaMask authentication
 - On-chain prescription storage
 - Automatic QR code generation

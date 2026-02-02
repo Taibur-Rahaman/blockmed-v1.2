@@ -229,43 +229,77 @@ graph LR
 ## File Organization
 
 ```
-BlockMed V1.1/
+BlockMed V1.2/
 │
 ├── 📁 contracts/                  # Blockchain Layer
-│   └── BlockMed.sol              # Smart Contract
+│   └── BlockMedV2.sol            # Smart Contract (RBAC, prescriptions, batches)
 │
-├── 📁 scripts/                    # Deployment
-│   └── deploy.js                 # Deploy Script
+├── 📁 scripts/                    # Deployment & Utilities
+│   ├── check-and-deploy.cjs     # Deploy + update config + .env.local
+│   ├── indexer/index.js          # Event indexer (port 3002)
+│   ├── verify-user.cjs          # CLI: verify user
+│   └── test-*.mjs, test-local.cjs
 │
 ├── 📁 src/                        # Frontend Application
 │   │
 │   ├── 📁 components/            # Reusable Components
-│   │   └── MetaMaskConnect.jsx   # Wallet Connection
+│   │   ├── Layout.jsx           # Main layout with sidebar
+│   │   ├── BlockchainInfo.jsx   # Blockchain status
+│   │   └── ErrorBoundary.jsx    # Error boundary
 │   │
 │   ├── 📁 pages/                 # Route Pages
-│   │   ├── Dashboard.jsx         # Home Page
-│   │   └── AddPrescription.jsx   # Prescription Page
+│   │   ├── LoginPage.jsx        # Login (Dev Mode or Wallet)
+│   │   ├── Dashboard.jsx         # Dashboard
+│   │   ├── CreatePrescription.jsx # Prescription creation
+│   │   ├── PharmacyVerification.jsx # Verify & dispense
+│   │   ├── PrescriptionTemplates.jsx # Templates
+│   │   ├── PatientPortal.jsx, PatientHistory.jsx
+│   │   ├── MedicineManagement.jsx, BatchManagement.jsx
+│   │   ├── UserManagement.jsx, Analytics.jsx, Settings.jsx
+│   │   └── ActivityLog.jsx
+│   │
+│   ├── 📁 store/                 # State Management
+│   │   └── useStore.js          # Zustand (user, demo data)
+│   │
+│   ├── 📁 hooks/                 # React Hooks
+│   │   └── useBlockchain.js     # Blockchain connection
 │   │
 │   ├── 📁 utils/                 # Utilities & Config
-│   │   ├── contractABI.json      # Contract Interface
-│   │   └── config.js             # Configuration
+│   │   ├── config.js            # Contract address & networks
+│   │   ├── contractHelper.js    # Contract read/write
+│   │   ├── devMode.js           # Dev Mode accounts
+│   │   ├── blockchainData.js    # Fetch data helpers
+│   │   ├── helpers.js            # Utilities
+│   │   ├── provider.js, walletFund.js
+│   │   └── contractABI.json     # Contract Interface
 │   │
-│   ├── App.jsx                   # Main App Component
+│   ├── 📁 i18n/                  # Translations (English & Bangla)
+│   ├── 📁 data/                  # medicines.json, demoBatches.js
+│   ├── App.jsx                   # Main App Component (Router)
 │   ├── main.jsx                  # React Entry
-│   └── index.css                 # Global Styles
+│   └── index.css                 # TailwindCSS Styles
 │
-├── 📄 index.html                  # HTML Template
-├── 📄 package.json                # Dependencies
-├── 📄 vite.config.js              # Vite Config
-├── 📄 hardhat.config.js           # Hardhat Config
+├── 📁 docs/                      # Documentation
+│   ├── BLOCKCHAIN_HOW_IT_WORKS.md
+│   ├── PRIVACY_ONCHAIN.md
+│   └── METAMASK_LOCALHOST_FIX.md
+│
+├── 📁 test/                      # Tests
+│   └── BlockMedV2.test.cjs
+│
+├── 📄 index.html                 # HTML Template
+├── 📄 package.json               # Dependencies
+├── 📄 vite.config.js             # Vite Config
+├── 📄 hardhat.config.cjs         # Hardhat Config
+├── 📄 tailwind.config.js         # Tailwind Config
 │
 └── 📚 Documentation/
-    ├── README.md
-    ├── QUICK_START.md
-    ├── DEPLOYMENT_GUIDE.md
-    ├── TESTING_CHECKLIST.md
-    ├── PROJECT_SUMMARY.md
-    └── ARCHITECTURE.md
+    ├── README.md, START_HERE.md, QUICK_START.md
+    ├── DEPLOYMENT_GUIDE.md, BLOCKMED_V2_GUIDE.md
+    ├── BLOCKCHAIN_DATA_PERSISTENCE.md, ARCHITECTURE.md
+    ├── PROJECT_SUMMARY.md, TESTING_CHECKLIST.md
+    ├── TROUBLESHOOTING.md, WALLET_SETUP.md
+    └── SUPER_ADMIN_PORTAL.md
 ```
 
 ## State Management Flow
@@ -277,20 +311,22 @@ stateDiagram-v2
     Connecting --> Connected: MetaMask Approved
     Connecting --> Disconnected: User Rejected
     
-    Connected --> Dashboard: Auto Navigate
+    Connected --> Login: Register/Login
+    Login --> Dashboard: Role-based navigation
     Dashboard --> CreatePrescription: Click Create
+    Dashboard --> PharmacyVerification: Verify/Dispense
     
-    CreatePrescription --> FillingForm: Enter Data
-    FillingForm --> Submitting: Click Submit
-    Submitting --> Confirming: MetaMask Confirm
+    CreatePrescription --> FillingForm: 5-step form
+    FillingForm --> Submitting: Submit (on-chain or demo)
+    Submitting --> Confirming: Dev Mode or MetaMask
     Confirming --> Success: Tx Confirmed
-    Confirming --> Error: Tx Failed
+    Confirming --> Error: Tx Failed or Demo Saved
     
     Success --> ShowingQR: Generate QR
     ShowingQR --> CreatePrescription: Create Another
     ShowingQR --> Dashboard: Back to Dashboard
     
-    Error --> FillingForm: Retry
+    Error --> FillingForm: Retry or Save as Demo
     
     Connected --> Disconnected: Disconnect/Network Change
 ```
@@ -515,9 +551,9 @@ graph TB
 
 ## Summary
 
-**BlockMed V1.1** follows a clean, layered architecture:
+**BlockMed V1.2 / V2** follows a clean, layered architecture:
 
-1. **Presentation Layer** - React UI components
+1. **Presentation Layer** - React UI components (pages, Layout, BlockchainInfo)
 2. **Integration Layer** - ethers.js + MetaMask
 3. **Smart Contract Layer** - Solidity blockchain logic
 4. **Storage Layer** - Ethereum blockchain
