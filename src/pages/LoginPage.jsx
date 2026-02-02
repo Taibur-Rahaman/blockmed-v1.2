@@ -234,7 +234,9 @@ const LoginPage = () => {
 
     try {
       const contract = await getWriteContract()
-      const currentAccount = await (await getProvider()).getSigner().getAddress()
+      const provider = await getProvider()
+      const signer = await provider.getSigner()
+      const currentAccount = await signer.getAddress()
 
       // Register user
       const tx = await contract.registerUser(
