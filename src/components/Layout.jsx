@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -27,6 +27,11 @@ const Layout = ({ children }) => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const { connected, networkName, isDevMode: devMode, refresh } = useBlockchain()
+
+  // Re-check blockchain when navigating (e.g. after enabling Dev Mode in Settings)
+  useEffect(() => {
+    refresh()
+  }, [location.pathname, refresh])
 
   const handleLogout = () => {
     // Disable Dev Mode if enabled
@@ -177,6 +182,15 @@ const Layout = ({ children }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Blockchain setup banner when logged in but chain not connected */}
+        {account && !connected && !location.pathname.startsWith('/settings') && (
+          <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-amber-200">
+              <span className="font-medium">Demo mode.</span> To use blockchain: Terminal 1 — <code className="bg-black/30 px-1.5 py-0.5 rounded text-xs">npx hardhat node</code> · Terminal 2 — <code className="bg-black/30 px-1.5 py-0.5 rounded text-xs">npm run deploy</code> · then <Link to="/settings" className="underline text-amber-100 hover:text-white">Settings → Enable Dev Mode</Link>.
+            </p>
+            <Link to="/settings" className="text-xs font-medium text-amber-300 hover:text-white whitespace-nowrap">Go to Settings</Link>
+          </div>
+        )}
         {/* Header */}
         <header className="h-20 glass-dark border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-20">
           <div className="flex items-center gap-4">

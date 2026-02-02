@@ -249,16 +249,19 @@ export function getFriendlyErrorMessage(error) {
   if (!error) return 'An error occurred'
   const msg = String(error.message || '')
   if (msg.includes('Hardhat disconnected') || msg.includes('Hardhat node')) {
-    return 'Blockchain not connected. Run "npx hardhat node" in a terminal, then enable Dev Mode in Settings.'
+    return 'Demo mode. Terminal 1: npm run blockchain · Terminal 2: npm run deploy · Settings → Blockchain Setup → Enable Dev Mode'
   }
   if (msg.includes('Wallet not connected') || msg.includes('No signer')) {
-    return 'Connect your wallet or enable Dev Mode in Settings.'
+    return 'Using demo mode. Connect your wallet or enable Dev Mode in Settings for on-chain actions.'
   }
   if (msg.includes('Contract not deployed') || msg.includes('not deployed')) {
     return 'Contract not deployed. Run "npm run deploy" (with Hardhat node running).'
   }
   if (msg.includes('user rejected') || msg.includes('rejected')) {
     return 'Transaction was cancelled.'
+  }
+  if (msg.includes('Only verified pharmacist can perform this action')) {
+    return 'Old contract in use. Run: npm run deploy (with Hardhat node running), then restart dev server and refresh. Log in as Admin (Account #0) to dispense.'
   }
   const contractMsg = parseContractError(error)
   if (contractMsg) return contractMsg

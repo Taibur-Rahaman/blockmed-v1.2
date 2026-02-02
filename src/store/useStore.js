@@ -131,6 +131,14 @@ export const useStore = create(
         demoPrescriptions: [prescription, ...state.demoPrescriptions],
         demoPrescriptionsVersion: state.demoPrescriptionsVersion + 1,
       })),
+      markDemoPrescriptionDispensed: (prescriptionId, dispensedBy) => set((state) => ({
+        demoPrescriptions: state.demoPrescriptions.map((p) =>
+          p.id === prescriptionId
+            ? { ...p, isDispensed: true, dispensedBy: dispensedBy || '', dispensedAt: Math.floor(Date.now() / 1000) }
+            : p
+        ),
+        demoPrescriptionsVersion: state.demoPrescriptionsVersion + 1,
+      })),
       clearDemoPrescriptions: () => set({ demoPrescriptions: [], demoPrescriptionsVersion: 0 }),
 
       // ============================================

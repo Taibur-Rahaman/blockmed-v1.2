@@ -48,10 +48,13 @@ const LoginPage = () => {
       // Check if dev mode was active
       const wasDevMode = initDevMode()
       if (wasDevMode && running) {
-        setDevModeActive(true)
-        const devAcc = getDevAccount()
-        if (devAcc) {
-          await handleAccountConnected(devAcc.address, true)
+        const accountIndex = parseInt(localStorage.getItem('blockmed-dev-account') || '0') || 0
+        const result = await enableDevMode(accountIndex)
+        if (result.success) {
+          setDevModeActive(true)
+          await handleAccountConnected(result.account.address, true)
+        } else {
+          disableDevMode()
         }
         return
       }

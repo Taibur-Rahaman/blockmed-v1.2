@@ -42,7 +42,7 @@ const CONTRACT_ADDRESS =
   process.env.CONTRACT_ADDRESS ||
   process.env.VITE_CONTRACT_ADDRESS ||
   "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const PORT = Number(process.env.INDEXER_PORT) || 3001;
+const PORT = Number(process.env.INDEXER_PORT) || 3002;
 const DB_PATH = process.env.INDEXER_DB || join(__dirname, "data", "blockmed.db");
 
 const Database = require("better-sqlite3");
@@ -171,9 +171,10 @@ function indexEvent(db, event) {
   }
 }
 
-async function runIndexer(db, contract) {
+async function runIndexer(db, contract, provider) {
   const fromBlock = (await getLastBlock(db)) || 0;
-  const toBlock = await contract.provider.getBlockNumber();
+  const prov = provider || contract.provider;
+  const toBlock = await prov.getBlockNumber();
   if (fromBlock > toBlock) return toBlock;
 
   const step = 2000;
@@ -185,7 +186,7 @@ async function runIndexer(db, contract) {
       fromBlock: current,
       toBlock: end,
     };
-    const logs = await contract.provider.getLogs(filter);
+    const logs = await prov.getLogs(filter);
     const iface = new ethers.Interface(abi);
     for (const log of logs) {
       try {
@@ -269,7 +270,7 @@ async function main() {
   console.log("  Contract:", CONTRACT_ADDRESS);
   console.log("  DB:", DB_PATH);
 
-  const last = await runIndexer(db, contract);
+  const last = await runIndexer(db, contract, provider);
   console.log("  Backfill up to block:", last);
 
   // Live listener: ethers v6 contract.on with full ABI

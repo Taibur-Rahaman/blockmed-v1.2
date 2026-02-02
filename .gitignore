@@ -11,3 +11,6 @@ typechain-types
 
 # Allow .env.example
 !.env.example
+
+# Indexer SQLite DB (runtime data)
+scripts/indexer/data/*.db

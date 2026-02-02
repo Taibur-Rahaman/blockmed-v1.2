@@ -16,6 +16,7 @@ import {
   getPrescriptionStatus, getBatchStatus, generatePatientHash,
   hasFeatureAccess, isUserRestricted
 } from '../utils/helpers'
+import { ROLES } from '../utils/config'
 import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
 import { BlockchainInfo, BlockchainBadge, BlockchainLoadingSteps, BlockchainVerificationProof } from '../components/BlockchainInfo'
@@ -24,7 +25,7 @@ const PharmacyVerification = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { account, language, role, incrementDemoBatchesVersion } = useStore()
+  const { account, language, role, incrementDemoBatchesVersion, demoPrescriptions, markDemoPrescriptionDispensed } = useStore()
 
   // Check access control
   useEffect(() => {
@@ -167,9 +168,10 @@ const PharmacyVerification = () => {
       toast.error(language === 'bn' ? 'প্রেসক্রিপশন আইডি লিখুন' : 'Enter Prescription ID')
       return
     }
-    const ready = await isBlockchainReady()
-    if (!ready.ready) {
-      toast.error(ready.error || (language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়' : 'Blockchain not connected'))
+
+    const numId = Number(id)
+    if (!Number.isInteger(numId) || numId < 1) {
+      toast.error(language === 'bn' ? 'বৈধ প্রেসক্রিপশন আইডি লিখুন' : 'Enter a valid prescription ID (number)')
       return
     }
 
@@ -178,14 +180,46 @@ const PharmacyVerification = () => {
     setPrescriptionData(null)
     setPatientHistory([])
 
+    const ready = await isBlockchainReady()
+
+    // Demo mode: load from store when blockchain not connected
+    if (!ready.ready) {
+      const demo = (demoPrescriptions || []).find((p) => p.id === numId)
+      if (demo) {
+        setPrescription({
+          id: demo.id,
+          patientHash: demo.patientHash,
+          ipfsHash: demo.ipfsHash,
+          doctor: demo.doctor,
+          createdAt: demo.createdAt ? new Date(demo.createdAt).getTime() / 1000 : Math.floor(Date.now() / 1000),
+          expiresAt: demo.createdAt ? new Date(demo.createdAt).getTime() / 1000 + (demo.validityDays || 30) * 86400 : Math.floor(Date.now() / 1000) + 30 * 86400,
+          isDispensed: demo.isDispensed || false,
+          dispensedBy: demo.dispensedBy || '',
+          dispensedAt: demo.dispensedAt || 0,
+          version: 1,
+          isActive: true,
+          isDemo: true,
+        })
+        setPrescriptionData({
+          patient: demo.patient,
+          symptoms: demo.symptoms,
+          diagnosis: demo.diagnosis,
+          medicines: demo.medicines,
+          tests: demo.tests,
+          advice: demo.advice,
+          followUp: demo.followUp,
+          validityDays: demo.validityDays,
+        })
+        toast.success(language === 'bn' ? 'ডেমো প্রেসক্রিপশন পাওয়া গেছে' : 'Demo prescription found')
+      } else {
+        toast.error(language === 'bn' ? 'প্রেসক্রিপশন পাওয়া যায়নি। ডেমো প্রেসক্রিপশন তৈরি করুন অথবা ব্লকচেইন সংযুক্ত করুন।' : 'Prescription not found. Create a demo prescription first or connect blockchain.')
+      }
+      setLoading(false)
+      return
+    }
+
     try {
       const contract = await getReadContract()
-      const numId = Number(id)
-      if (!Number.isInteger(numId) || numId < 1) {
-        toast.error(language === 'bn' ? 'বৈধ প্রেসক্রিপশন আইডি লিখুন' : 'Enter a valid prescription ID (number)')
-        setLoading(false)
-        return
-      }
       const result = await contract.getPrescription(numId)
       
       const prescriptionData = {
@@ -211,11 +245,9 @@ const PharmacyVerification = () => {
         console.log('✅ Prescription data parsed:', parsedData)
       } catch (error) {
         console.error('Error parsing prescription data:', error)
-        // If parsing fails, try to extract medicines from the string
         setPrescriptionData(null)
       }
       
-      // Load patient history if we have patientHash
       if (result.patientHash) {
         await loadPatientHistory(result.patientHash)
       }
@@ -238,12 +270,31 @@ const PharmacyVerification = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prescriptionId])
 
-  // Verify and dispense prescription
+  // Verify and dispense prescription (on-chain or demo)
   const handleDispense = async () => {
     if (!prescription) return
 
-    setLoading(true)
+    // Demo mode: mark as dispensed locally
+    if (prescription.isDemo) {
+      markDemoPrescriptionDispensed(prescription.id, account || 'demo-pharmacist')
+      setPrescription({
+        ...prescription,
+        isDispensed: true,
+        dispensedBy: account || 'demo-pharmacist',
+        dispensedAt: Math.floor(Date.now() / 1000),
+      })
+      toast.success(language === 'bn' ? 'প্রেসক্রিপশন ডিসপেন্স সিমিউলেটেড (ডেমো)' : 'Prescription dispensed (demo mode)')
+      return
+    }
 
+    // On-chain: require blockchain
+    const ready = await isBlockchainReady()
+    if (!ready.ready) {
+      toast.error(language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়। ডেমো প্রেসক্রিপশন ব্যবহার করুন অথবা npx hardhat node চালু করে Dev Mode সক্ষম করুন।' : 'Blockchain not connected. Use a demo prescription, or run npx hardhat node and enable Dev Mode.')
+      return
+    }
+
+    setLoading(true)
     try {
       const contract = await getWriteContract()
       const tx = await contract.dispensePrescription(prescription.id)
@@ -374,8 +425,18 @@ const PharmacyVerification = () => {
     )
     if (!reason || !reason.trim()) return
 
-    setLoading(true)
+    if (batch.isDemo) {
+      toast.error(language === 'bn' ? 'ডেমো ব্যাচে ফ্ল্যাগ করা যায় না। অন-চেইন ব্যাচের জন্য ব্লকচেইন সংযুক্ত করুন।' : 'Cannot flag demo batch. Connect blockchain for on-chain batches.')
+      return
+    }
 
+    const ready = await isBlockchainReady()
+    if (!ready.ready) {
+      toast.error(language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়। npx hardhat node চালু করে Dev Mode সক্ষম করুন।' : 'Blockchain not connected. Run npx hardhat node and enable Dev Mode.')
+      return
+    }
+
+    setLoading(true)
     try {
       const contract = await getWriteContract()
       const tx = await contract.flagBatch(batch.id, reason)
@@ -432,9 +493,16 @@ const PharmacyVerification = () => {
       return
     }
 
-    // On-chain: require Pharmacist
-    if (role !== 3) {
-      toast.error(language === 'bn' ? 'শুধুমাত্র ফার্মাসিস্ট ক্রয় নিশ্চিত করতে পারবেন' : 'Only pharmacists can confirm purchase on blockchain')
+    // On-chain: require Pharmacist or Admin
+    const canDispenseOnChain = role === ROLES.PHARMACIST || role === ROLES.ADMIN
+    if (!canDispenseOnChain) {
+      toast.error(language === 'bn' ? 'শুধুমাত্র ফার্মাসিস্ট বা অ্যাডমিন ক্রয় নিশ্চিত করতে পারবেন' : 'Only pharmacist or admin can confirm purchase on blockchain')
+      return
+    }
+
+    const ready = await isBlockchainReady()
+    if (!ready.ready) {
+      toast.error(language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়। ডেমো ব্যাচ ব্যবহার করুন অথবা npx hardhat node চালু করে Dev Mode সক্ষম করুন।' : 'Blockchain not connected. Use a demo batch, or run npx hardhat node and enable Dev Mode.')
       return
     }
 
@@ -478,7 +546,7 @@ const PharmacyVerification = () => {
       {!chainReady && (
         <div className="card border-amber-500/40 bg-amber-500/10">
           <p className="text-amber-300 font-medium">
-            {language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়। প্রেসক্রিপশন ও ওষুধ যাচাই করতে ওয়ালেট বা ডেভ মোড চালু করুন।' : 'Blockchain not connected. Connect wallet or enable Dev Mode to verify prescriptions and medicine.'}
+            {language === 'bn' ? 'ডেমো মোড — প্রেসক্রিপশন ও ব্যাচ যাচাই করা যাবে। অন-চেইন যাচাইয়ের জন্য ওয়ালেট বা ডেভ মোড চালু করুন।' : 'Demo mode — You can verify prescriptions and batches. Connect wallet or enable Dev Mode for on-chain verification.'}
           </p>
         </div>
       )}
@@ -1033,10 +1101,10 @@ const PharmacyVerification = () => {
                     )}
                   </div>
 
-                  {/* Confirm Purchase - on-chain: Pharmacist only; demo: anyone (simulated locally) */}
+                  {/* Confirm Purchase - on-chain: Pharmacist or Admin; demo: anyone (simulated locally) */}
                   {!batch.notFound && !batch.isRecalled && !batch.isFlagged && !isExpired(batch.expiresAt) &&
                    (batch.totalUnits ?? 0) > 0 && (batch.totalUnits - (batch.dispensedUnits ?? 0)) > 0 &&
-                   (batch.isDemo || role === 3) && (
+                   (batch.isDemo || role === ROLES.PHARMACIST || role === ROLES.ADMIN) && (
                     <div className="p-4 rounded-xl bg-primary-500/10 border border-primary-500/30">
                       <p className="text-sm font-medium text-primary-300 mb-3">
                         {language === 'bn' ? 'ক্রেতা কত ইউনিট কিনেছে?' : 'How many units did the customer buy?'}

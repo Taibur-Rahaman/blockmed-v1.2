@@ -19,8 +19,8 @@ async function main() {
   console.log("  Pharmacist: ", pharmacist.address);
   console.log("  Patient:    ", patient.address);
 
-  // Get contract
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  // Get contract address from env or default (first Hardhat deploy)
+  const contractAddress = process.env.VITE_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const BlockMedV2 = await hre.ethers.getContractFactory("BlockMedV2");
   const contract = BlockMedV2.attach(contractAddress);
 

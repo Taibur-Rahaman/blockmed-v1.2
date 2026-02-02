@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast'
 import { useStore } from '../store/useStore'
 import { usePrescriptionStore } from '../store/useStore'
+import staticMedicines from '../data/medicines.json'
 
 const PrescriptionTemplates = () => {
   const { t } = useTranslation()
@@ -34,6 +35,11 @@ const PrescriptionTemplates = () => {
     followUp: '',
     validityDays: 30
   })
+  const [medicineSearch, setMedicineSearch] = useState('')
+  const [medicineSearchResults, setMedicineSearchResults] = useState([])
+  const [selectedMedicine, setSelectedMedicine] = useState(null)
+  const [medicineDose, setMedicineDose] = useState('')
+  const [medicineDuration, setMedicineDuration] = useState('')
 
   // Load templates from localStorage
   useEffect(() => {
@@ -82,11 +88,11 @@ const PrescriptionTemplates = () => {
   }
 
   const handleCreateTemplate = () => {
-    // Get current prescription data
+    // Get current prescription data (if any) - optional, can create from scratch
     const currentData = {
       symptoms: prescriptionStore.symptoms,
       diagnosis: prescriptionStore.diagnosis,
-      medicines: prescriptionStore.medicines,
+      medicines: prescriptionStore.medicines?.length ? prescriptionStore.medicines : [],
       tests: prescriptionStore.tests,
       advice: prescriptionStore.advice,
       followUp: prescriptionStore.followUp,
@@ -99,8 +105,65 @@ const PrescriptionTemplates = () => {
       category: 'general',
       ...currentData
     })
+    setMedicineSearch('')
+    setMedicineSearchResults([])
+    setSelectedMedicine(null)
+    setMedicineDose('')
+    setMedicineDuration('')
     setEditingTemplate(null)
     setShowTemplateModal(true)
+  }
+
+  const searchMedicinesInModal = (query) => {
+    if (!query || query.length < 2) {
+      setMedicineSearchResults([])
+      return
+    }
+    const q = query.toLowerCase()
+    let medicinesList = staticMedicines
+    try {
+      const stored = localStorage.getItem('blockmed-medicines')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) medicinesList = parsed
+      }
+    } catch (e) {}
+    const results = medicinesList.filter(m =>
+      (m.name + ' ' + (m.generic || '') + ' ' + (m.brand || '') + ' ' + (m.category || ''))
+        .toLowerCase().includes(q)
+    ).slice(0, 12)
+    setMedicineSearchResults(results)
+  }
+
+  const handleAddMedicineToTemplate = (medicine) => {
+    const name = medicine?.name || medicineSearch?.trim()
+    if (!name) return
+    const med = {
+      id: Date.now() + Math.random(),
+      name: medicine?.name || name,
+      generic: medicine?.generic || '',
+      brand: medicine?.brand || '',
+      strength: medicine?.strength || '',
+      dose: medicineDose || '1-1-1',
+      duration: medicineDuration || '7 days',
+      instructions: ''
+    }
+    setTemplateForm({
+      ...templateForm,
+      medicines: [...templateForm.medicines, med]
+    })
+    setSelectedMedicine(null)
+    setMedicineSearch('')
+    setMedicineSearchResults([])
+    setMedicineDose('')
+    setMedicineDuration('')
+  }
+
+  const handleRemoveMedicineFromTemplate = (index) => {
+    setTemplateForm({
+      ...templateForm,
+      medicines: templateForm.medicines.filter((_, i) => i !== index)
+    })
   }
 
   const handleSaveTemplate = () => {
@@ -161,6 +224,11 @@ const PrescriptionTemplates = () => {
       followUp: template.followUp || '',
       validityDays: template.validityDays || 30
     })
+    setMedicineSearch('')
+    setMedicineSearchResults([])
+    setSelectedMedicine(null)
+    setMedicineDose('')
+    setMedicineDuration('')
     setShowTemplateModal(true)
   }
 
@@ -445,43 +513,104 @@ const PrescriptionTemplates = () => {
                   />
                 </div>
 
-                {/* Medicines */}
+                {/* Medicines - Add directly here */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     <FiPackage className="inline mr-2" />
                     Medicines ({templateForm.medicines.length})
                   </label>
-                  {templateForm.medicines.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-white/5 border border-dashed border-white/10 text-center text-gray-400">
-                      <p className="text-sm">No medicines in template</p>
-                      <p className="text-xs mt-1">Add medicines from the prescription form first</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {templateForm.medicines.map((med, index) => (
-                        <div
-                          key={index}
-                          className="p-3 rounded-lg bg-white/5 flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="text-white font-medium">{med.name || med.medicineName}</p>
-                            {med.dose && (
-                              <p className="text-sm text-gray-400">Dose: {med.dose}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => {
-                              const updated = templateForm.medicines.filter((_, i) => i !== index)
-                              setTemplateForm({ ...templateForm, medicines: updated })
+                  <div className="space-y-3">
+                    {/* Medicine search - add directly */}
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                      <p className="text-xs text-gray-400 mb-2">Search and add medicines</p>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="relative flex-1 min-w-[140px]">
+                          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                          <input
+                            type="text"
+                            className="form-input pl-9 py-2 text-sm"
+                            placeholder="Search medicine..."
+                            value={medicineSearch}
+                            onChange={(e) => {
+                              setMedicineSearch(e.target.value)
+                              searchMedicinesInModal(e.target.value)
                             }}
-                            className="btn-danger p-1"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
+                          />
+                          {medicineSearchResults.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-dark-800 rounded-lg border border-white/20 max-h-48 overflow-y-auto">
+                              {medicineSearchResults.map((m, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  className="w-full text-left px-3 py-2 hover:bg-primary-500/20 text-sm"
+                                  onClick={() => {
+                                    setSelectedMedicine(m)
+                                    setMedicineSearchResults([])
+                                    setMedicineSearch(m.name)
+                                  }}
+                                >
+                                  {m.name} {m.strength && `(${m.strength})`}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
+                        <input
+                          type="text"
+                          className="form-input py-2 text-sm w-24"
+                          placeholder="Dose"
+                          value={medicineDose}
+                          onChange={(e) => setMedicineDose(e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          className="form-input py-2 text-sm w-24"
+                          placeholder="Duration"
+                          value={medicineDuration}
+                          onChange={(e) => setMedicineDuration(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddMedicineToTemplate(selectedMedicine || { name: medicineSearch })}
+                          disabled={!selectedMedicine && !medicineSearch.trim()}
+                          className="btn-primary py-2 px-3 text-sm disabled:opacity-50"
+                        >
+                          <FiPlus size={14} />
+                          Add
+                        </button>
+                      </div>
+                      {selectedMedicine && (
+                        <p className="text-xs text-primary-400 mt-2">
+                          Selected: {selectedMedicine.name} {selectedMedicine.strength && `(${selectedMedicine.strength})`}
+                        </p>
+                      )}
                     </div>
-                  )}
+                    {/* Added medicines list */}
+                    {templateForm.medicines.length === 0 ? (
+                      <p className="text-xs text-gray-500">No medicines yet. Search above to add.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {templateForm.medicines.map((med, index) => (
+                          <div
+                            key={index}
+                            className="p-3 rounded-lg bg-white/5 flex items-center justify-between"
+                          >
+                            <div>
+                              <p className="text-white font-medium text-sm">{med.name || med.medicineName}</p>
+                              <p className="text-xs text-gray-400">{med.dose} • {med.duration}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMedicineFromTemplate(index)}
+                              className="p-1.5 rounded hover:bg-red-500/20 text-red-400"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Tests */}

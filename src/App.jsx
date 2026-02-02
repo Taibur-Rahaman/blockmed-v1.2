@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Store
 import { useStore } from './store/useStore'
 import { isUserRestricted, getUserRestriction, hasFeatureAccess } from './utils/helpers'
+import { initDevMode } from './utils/devMode'
 
 // Layout & Auth
 import Layout from './components/Layout'
@@ -61,6 +62,8 @@ function App() {
     const init = async () => {
       try {
         console.log('🔄 Starting app initialization...')
+        // Restore Dev Mode from localStorage before any page uses blockchain
+        initDevMode()
         // Small delay to ensure all modules are loaded
         await new Promise(resolve => setTimeout(resolve, 50))
         setIsInitialized(true)

@@ -21,8 +21,8 @@ async function main() {
   console.log("=".repeat(50));
   console.log("User Address:", userAddress);
 
-  // Get contract
-  const contractAddress = require("../src/utils/config.js").CONTRACT_ADDRESS;
+  // Get contract address from env or default
+  const contractAddress = process.env.VITE_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const BlockMedV2 = await hre.ethers.getContractFactory("BlockMedV2");
   const contract = BlockMedV2.attach(contractAddress);
 

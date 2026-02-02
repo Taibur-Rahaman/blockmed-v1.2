@@ -200,6 +200,17 @@ contract BlockMedV2 {
         _;
     }
     
+    /// @dev Admin can also perform pharmacist actions (verify & dispense). Owner (deployer) always has access.
+    modifier onlyPharmacistOrAdmin() {
+        require(
+            (users[msg.sender].role == Role.Pharmacist && users[msg.sender].isVerified) ||
+            (users[msg.sender].role == Role.Admin && users[msg.sender].isVerified) ||
+            msg.sender == owner,
+            "Only verified pharmacist or admin can perform this action"
+        );
+        _;
+    }
+    
     modifier onlyManufacturer() {
         require(users[msg.sender].role == Role.Manufacturer && users[msg.sender].isVerified, "Only verified manufacturer can perform this action");
         _;
@@ -405,7 +416,7 @@ contract BlockMedV2 {
     /**
      * @dev Dispense a prescription (Pharmacist only)
      */
-    function dispensePrescription(uint256 _prescriptionId) external onlyPharmacist {
+    function dispensePrescription(uint256 _prescriptionId) external onlyPharmacistOrAdmin {
         Prescription storage presc = prescriptions[_prescriptionId];
         
         require(presc.id != 0, "Prescription does not exist");
@@ -544,7 +555,7 @@ contract BlockMedV2 {
      * @param _batchId Batch ID
      * @param _quantity Number of units customer purchased
      */
-    function dispenseFromBatch(uint256 _batchId, uint256 _quantity) external onlyPharmacist {
+    function dispenseFromBatch(uint256 _batchId, uint256 _quantity) external onlyPharmacistOrAdmin {
         MedicineBatch storage batch = medicineBatches[_batchId];
         require(batch.id != 0, "Batch does not exist");
         require(!batch.isRecalled, "Cannot dispense recalled batch");

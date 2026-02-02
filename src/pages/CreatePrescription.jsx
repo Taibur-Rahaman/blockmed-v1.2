@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +18,7 @@ import { useStore } from '../store/useStore'
 import { usePrescriptionStore } from '../store/useStore'
 import { GENDER_OPTIONS, VALIDITY_OPTIONS, API } from '../utils/config'
 import { getWriteContract, getCurrentAccount, isBlockchainReady, getContractAddress, getFriendlyErrorMessage } from '../utils/contractHelper'
+import { useBlockchain } from '../hooks/useBlockchain'
 import { 
   calculateAge, generatePatientHash, copyToClipboard, formatDate,
   isUserRestricted, getUserRestriction
@@ -30,6 +31,7 @@ const CreatePrescription = () => {
   const navigate = useNavigate()
   const { account, language, logout, addDemoPrescription, demoPrescriptionsVersion } = useStore()
   const prescriptionStore = usePrescriptionStore()
+  const { connected: blockchainConnected, refresh: refreshBlockchain } = useBlockchain()
   const [usingDemoMode, setUsingDemoMode] = useState(false)
   const printRef = useRef()
   
@@ -79,6 +81,11 @@ const CreatePrescription = () => {
       age: age.toString(),
     })
   }
+
+  // Refresh blockchain status when page loads (e.g. after enabling Dev Mode)
+  useEffect(() => {
+    refreshBlockchain()
+  }, [refreshBlockchain])
 
   // Check if user is restricted and access controls
   useEffect(() => {
@@ -379,7 +386,12 @@ const CreatePrescription = () => {
         })
         
         setUsingDemoMode(true)
-        toast.success(language === 'bn' ? 'প্রেসক্রিপশন সংরক্ষিত (ডেমো মোড)' : 'Prescription saved (demo mode)')
+        toast.success(
+          language === 'bn' 
+            ? 'প্রেসক্রিপশন স্থানীয়ভাবে সংরক্ষিত। ব্লকচেইনে সংরক্ষণ করতে Settings → Dev Mode সক্ষম করুন।'
+            : 'Prescription saved locally (demo). Enable Dev Mode in Settings to save on blockchain.',
+          { duration: 6000 }
+        )
         setIsSubmitting(false)
         return
       }
@@ -426,6 +438,53 @@ const CreatePrescription = () => {
       toast.success(`Prescription #${newId} created on blockchain!`)
     } catch (error) {
       console.error('Submission error:', error)
+      toast.error(getFriendlyErrorMessage(error))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Save demo prescription to blockchain now (when user has started Hardhat + Dev Mode)
+  const handleSaveToBlockchainNow = async () => {
+    if (!patientHash || !ipfsHash) return
+    setIsSubmitting(true)
+    try {
+      const ready = await isBlockchainReady()
+      if (!ready.ready) {
+        toast.error(ready.error || (language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়। npx hardhat node চালু করুন এবং Settings থেকে Dev Mode সক্ষম করুন।' : 'Blockchain not connected. Run npx hardhat node and enable Dev Mode in Settings.'))
+        setIsSubmitting(false)
+        return
+      }
+      const currentAccount = await getCurrentAccount()
+      if (!currentAccount) {
+        toast.error('No account connected. Enable Dev Mode in Settings.')
+        setIsSubmitting(false)
+        return
+      }
+      const contract = await getWriteContract()
+      toast.loading('Saving to blockchain...')
+      const tx = await contract.addPrescription(patientHash, ipfsHash)
+      const receipt = await tx.wait()
+      const newBlock = receipt?.blockNumber ?? null
+      const count = await contract.prescriptionCount()
+      const newId = Number(count)
+      setGeneratedData({
+        patientHash,
+        ipfsHash,
+        qrData: JSON.stringify({
+          prescriptionId: newId,
+          patientHash,
+          doctor: currentAccount,
+        }),
+        prescriptionId: newId,
+        txHash: tx.hash,
+        blockNumber: newBlock,
+      })
+      setUsingDemoMode(false)
+      toast.dismiss()
+      toast.success(language === 'bn' ? `প্রেসক্রিপশন #${newId} ব্লকচেইনে সংরক্ষিত হয়েছে` : `Prescription #${newId} saved on blockchain!`)
+    } catch (error) {
+      console.error('Save to blockchain error:', error)
       toast.error(getFriendlyErrorMessage(error))
     } finally {
       setIsSubmitting(false)
@@ -699,6 +758,60 @@ const CreatePrescription = () => {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Choose Template - Quick start */}
+      <div className="card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-1">
+          <h3 className="font-medium text-white flex items-center gap-2 mb-1">
+            <FiLayers className="text-primary-400" size={18} />
+            Start from Template
+          </h3>
+          <p className="text-sm text-gray-400">
+            {templates.length > 0
+              ? 'Select a saved template to pre-fill symptoms, diagnosis & medicines'
+              : 'Create templates to save time. Add common prescriptions in Templates.'}
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {templates.length > 0 ? (
+            <>
+              <select
+                className="form-select min-w-[180px]"
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value
+                  if (id) {
+                    const t = templates.find(x => x.id === id)
+                    if (t) handleApplyTemplate(t)
+                    e.target.value = ''
+                  }
+                }}
+              >
+                <option value="">Choose a template...</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.medicines?.length || 0} meds)
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setShowTemplateModal(true)}
+                className="btn-secondary"
+              >
+                Browse
+              </button>
+            </>
+          ) : null}
+          <button
+            onClick={() => navigate('/templates')}
+            className="btn-primary"
+            title="Manage templates"
+          >
+            <FiLayers size={16} />
+            {templates.length > 0 ? 'Manage' : 'Create Template'}
+          </button>
         </div>
       </div>
 
@@ -1185,14 +1298,32 @@ const CreatePrescription = () => {
                         <FiAlertCircle className="text-amber-400" />
                         <span className="font-medium text-amber-300">Demo Mode</span>
                       </div>
-                      <p className="text-sm text-gray-300">
-                        This prescription is saved locally (not on blockchain). To save on-chain:
+                      <p className="text-sm text-gray-300 mb-3">
+                        This prescription is saved locally. To save on blockchain:
                       </p>
-                      <ol className="text-sm text-gray-400 mt-2 list-decimal list-inside space-y-1">
+                      <ol className="text-sm text-gray-400 mb-4 list-decimal list-inside space-y-1">
                         <li>Run <code className="bg-black/30 px-1.5 py-0.5 rounded">npx hardhat node</code></li>
                         <li>Run <code className="bg-black/30 px-1.5 py-0.5 rounded">npm run deploy</code></li>
-                        <li>Enable Dev Mode in Settings, then try again</li>
+                        <li><Link to="/settings" className="text-primary-400 hover:text-primary-300 underline">Enable Dev Mode in Settings</Link></li>
                       </ol>
+                      <button
+                        type="button"
+                        onClick={handleSaveToBlockchainNow}
+                        disabled={isSubmitting}
+                        className="btn-primary w-full sm:w-auto"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span className="loader w-4 h-4" />
+                            Saving to blockchain…
+                          </>
+                        ) : (
+                          <>
+                            <FiCheck size={18} />
+                            Save to blockchain now
+                          </>
+                        )}
+                      </button>
                     </div>
                   ) : (
                     <>
@@ -1213,6 +1344,17 @@ const CreatePrescription = () => {
 
               {/* Actions */}
               <div className="card">
+                {!txHash && (
+                  <p className="text-sm text-gray-400 mb-3">
+                    {blockchainConnected ? (
+                      <span className="text-primary-400">✓ Blockchain connected — will save on-chain</span>
+                    ) : (
+                      <span className="text-amber-400">
+                        Demo mode — will save locally. <Link to="/settings" className="underline text-primary-400 hover:text-primary-300">Enable Dev Mode</Link> for blockchain.
+                      </span>
+                    )}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-3">
                   {!txHash ? (
                     <>
