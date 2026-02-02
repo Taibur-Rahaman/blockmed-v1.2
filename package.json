@@ -17,6 +17,7 @@
     "indexer": "node scripts/indexer/index.js",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "fund": "echo 'Usage: RECIPIENT_ADDRESS=0x... npm run fund' && npx hardhat run scripts/fund-wallet.cjs --network localhost",
+    "verify:user": "echo 'Usage: USER_ADDRESS=0x... npm run verify:user' && npx hardhat run scripts/verify-user.cjs --network localhost",
     "start": "echo '🚀 Starting BlockMed...' && npm run ganache & sleep 3 && npm run deploy && npm run dev"
   },
   "dependencies": {

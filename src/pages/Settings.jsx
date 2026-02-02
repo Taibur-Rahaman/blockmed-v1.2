@@ -10,7 +10,7 @@ import {
 import { useStore } from '../store/useStore'
 import { NETWORKS, DEFAULT_NETWORK } from '../utils/config'
 import { shortenAddress, copyToClipboard } from '../utils/helpers'
-import { getContractAddress, isBlockchainReady } from '../utils/contractHelper'
+import { getContractAddress, isBlockchainReady, getWriteContract, getReadContract } from '../utils/contractHelper'
 import { 
   enableDevMode, 
   disableDevMode, 
@@ -30,6 +30,7 @@ const Settings = () => {
   const [devModeActive, setDevModeActive] = useState(isDevMode())
   const [hardhatRunning, setHardhatRunning] = useState(false)
   const [selectedDevAccount, setSelectedDevAccount] = useState(0)
+  const [verifying, setVerifying] = useState(false)
   
   useEffect(() => {
     const checkHardhat = async () => {
@@ -71,6 +72,51 @@ const Settings = () => {
     setUser(null)
     toast.success('Dev Mode disabled')
     setTimeout(() => window.location.reload(), 1000)
+  }
+
+  const handleVerifyAccount = async () => {
+    if (!account || !user || user.isVerified) return
+    
+    setVerifying(true)
+    try {
+      // Switch to admin account (Account #0)
+      const currentIndex = selectedDevAccount
+      const adminResult = await enableDevMode(0)
+      
+      if (!adminResult.success) {
+        toast.error('Failed to switch to admin account')
+        return
+      }
+      
+      const contract = await getWriteContract()
+      const tx = await contract.verifyUser(account)
+      
+      toast.loading('Verifying account...')
+      await tx.wait()
+      
+      // Switch back to original account
+      await enableDevMode(currentIndex)
+      
+      // Refresh user info
+      const readContract = await getReadContract()
+      const userInfo = await readContract.getUser(account)
+      setUser({
+        address: userInfo.userAddress,
+        role: Number(userInfo.role),
+        name: userInfo.name,
+        licenseNumber: userInfo.licenseNumber,
+        isVerified: userInfo.isVerified,
+        isActive: userInfo.isActive,
+      })
+      
+      toast.dismiss()
+      toast.success('Account verified successfully!')
+    } catch (error) {
+      console.error('Verify error:', error)
+      toast.error(error.message || 'Failed to verify account')
+    } finally {
+      setVerifying(false)
+    }
   }
 
   const handleCopyAddress = async () => {
@@ -151,12 +197,21 @@ const Settings = () => {
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-400">Verification Status</p>
               <p className={user?.isVerified ? 'text-primary-400' : 'text-yellow-400'}>
                 {user?.isVerified ? 'Verified' : 'Pending Verification'}
               </p>
             </div>
+            {!user?.isVerified && devModeActive && (
+              <button
+                onClick={handleVerifyAccount}
+                disabled={verifying}
+                className="btn-primary text-sm"
+              >
+                {verifying ? 'Verifying...' : 'Verify Now'}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

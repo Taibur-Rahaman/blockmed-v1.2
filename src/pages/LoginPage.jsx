@@ -234,7 +234,9 @@ const LoginPage = () => {
 
     try {
       const contract = await getWriteContract()
+      const currentAccount = await (await getProvider()).getSigner().getAddress()
 
+      // Register user
       const tx = await contract.registerUser(
         registerData.name,
         registerData.licenseNumber,
@@ -245,15 +247,57 @@ const LoginPage = () => {
       await tx.wait()
       
       toast.dismiss()
-      toast.success('Registration successful!')
       
-      setUser({
-        name: registerData.name,
-        licenseNumber: registerData.licenseNumber,
-        role: registerData.role,
-        isVerified: false,
-        isActive: true,
-      })
+      // Auto-verify in Dev Mode (since Account #0 is admin)
+      if (devModeActive) {
+        try {
+          toast.loading('Auto-verifying Dev Mode account...')
+          
+          // Get admin account (Account #0)
+          const adminResult = await enableDevMode(0)
+          if (adminResult.success) {
+            const adminContract = await getWriteContract()
+            const verifyTx = await adminContract.verifyUser(currentAccount)
+            await verifyTx.wait()
+            
+            // Switch back to original account
+            await enableDevMode(selectedDevAccount)
+            
+            toast.dismiss()
+            toast.success('Registration successful! Account auto-verified.')
+            
+            setUser({
+              name: registerData.name,
+              licenseNumber: registerData.licenseNumber,
+              role: registerData.role,
+              isVerified: true,
+              isActive: true,
+            })
+          }
+        } catch (verifyError) {
+          console.error('Auto-verify error:', verifyError)
+          toast.dismiss()
+          toast.success('Registration successful! (Manual verification needed)')
+          
+          setUser({
+            name: registerData.name,
+            licenseNumber: registerData.licenseNumber,
+            role: registerData.role,
+            isVerified: false,
+            isActive: true,
+          })
+        }
+      } else {
+        toast.success('Registration successful! Awaiting admin verification.')
+        
+        setUser({
+          name: registerData.name,
+          licenseNumber: registerData.licenseNumber,
+          role: registerData.role,
+          isVerified: false,
+          isActive: true,
+        })
+      }
       
       setShowRegister(false)
     } catch (error) {
