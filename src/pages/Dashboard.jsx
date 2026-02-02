@@ -9,8 +9,10 @@ import {
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
 import { formatNumber, formatTimestamp, getRoleName } from '../utils/helpers'
-import { getReadContract, getCurrentAccount } from '../utils/contractHelper'
+import { getReadContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
+import { BlockchainBadge } from '../components/BlockchainInfo'
+import toast from 'react-hot-toast'
 
 const Dashboard = () => {
   const { t } = useTranslation()
@@ -33,8 +35,11 @@ const Dashboard = () => {
   }, [account])
 
   const fetchDashboardData = async () => {
-    // Works with both Dev Mode and Wallet Mode
-    if (!isDevMode() && !window.ethereum) return
+    const ready = await isBlockchainReady()
+    if (!ready.ready) {
+      setLoading(false)
+      return
+    }
 
     try {
       const contract = await getReadContract()
@@ -92,6 +97,7 @@ const Dashboard = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      toast.error(error?.message || 'Failed to load dashboard. Is blockchain running?')
     } finally {
       setLoading(false)
     }
@@ -183,11 +189,16 @@ const Dashboard = () => {
       <motion.div variants={itemVariants} className="glass-card p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-white">
-              {t('dashboard.welcome')}, {user?.name || 'User'}! 👋
-            </h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">
+                {t('dashboard.welcome')}, {user?.name || 'User'}! 👋
+              </h1>
+              {!loading && (
+                <BlockchainBadge label="Data from blockchain" />
+              )}
+            </div>
             <p className="text-gray-400 mt-1">
-              {getRoleName(role)} Dashboard • {new Date().toLocaleDateString('en-US', { 
+              {loading ? 'Loading from blockchain…' : `${getRoleName(role)} Dashboard`} • {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 

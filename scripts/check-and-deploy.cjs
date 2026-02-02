@@ -20,8 +20,8 @@ async function main() {
   const configPath = path.join(__dirname, "../src/utils/config.js");
   let configContent = fs.readFileSync(configPath, "utf8");
   
-  // Extract current contract address from config
-  const addressMatch = configContent.match(/CONTRACT_ADDRESS\s*=\s*['"](0x[a-fA-F0-9]{40})['"]/);
+  // Extract current contract address from config (handles: = '0x...' or || '0x...')
+  const addressMatch = configContent.match(/(0x[a-fA-F0-9]{40})/);
   const configuredAddress = addressMatch ? addressMatch[1] : null;
   
   console.log("📍 Configured Address:", configuredAddress || "Not set");
@@ -61,10 +61,10 @@ async function main() {
   console.log("\n✅ BlockMed V2 deployed successfully!");
   console.log("📍 New Contract Address:", contractAddress);
 
-  // Update config file
+  // Update config file (handles: = '0x...' or = import.meta.env.VITE_CONTRACT_ADDRESS || '0x...')
   const newConfig = configContent.replace(
-    /export const CONTRACT_ADDRESS = ['"][^'"]*['"]/,
-    `export const CONTRACT_ADDRESS = '${contractAddress}'`
+    /(export const CONTRACT_ADDRESS = )(?:import\.meta\.env\.VITE_CONTRACT_ADDRESS \|\| )?['"][^'"]*['"]/,
+    `$1import.meta.env.VITE_CONTRACT_ADDRESS || '${contractAddress}'`
   );
   
   fs.writeFileSync(configPath, newConfig, "utf8");

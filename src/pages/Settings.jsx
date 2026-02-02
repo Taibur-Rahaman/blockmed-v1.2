@@ -4,12 +4,13 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import {
   FiSettings, FiGlobe, FiMoon, FiSun, FiBell, FiShield,
-  FiLink, FiCopy, FiExternalLink
+  FiLink, FiCopy, FiExternalLink, FiCheckCircle, FiAlertCircle
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
-import { CONTRACT_ADDRESS, NETWORKS, DEFAULT_NETWORK } from '../utils/config'
+import { NETWORKS, DEFAULT_NETWORK } from '../utils/config'
 import { shortenAddress, copyToClipboard } from '../utils/helpers'
+import { getContractAddress, isBlockchainReady } from '../utils/contractHelper'
 import { 
   enableDevMode, 
   disableDevMode, 
@@ -78,9 +79,30 @@ const Settings = () => {
   }
 
   const handleCopyContract = async () => {
-    await copyToClipboard(CONTRACT_ADDRESS)
+    await copyToClipboard(getContractAddress())
     toast.success('Contract address copied!')
   }
+
+  const [blockchainStatus, setBlockchainStatus] = useState({ ready: false, error: null })
+  const [testingConnection, setTestingConnection] = useState(false)
+  const testBlockchainConnection = async () => {
+    setTestingConnection(true)
+    setBlockchainStatus({ ready: false, error: null })
+    try {
+      const result = await isBlockchainReady()
+      setBlockchainStatus({ ready: result.ready, error: result.error })
+      if (result.ready) toast.success('Blockchain connected')
+      else toast.error(result.error)
+    } catch (e) {
+      setBlockchainStatus({ ready: false, error: e?.message })
+      toast.error(e?.message || 'Connection failed')
+    } finally {
+      setTestingConnection(false)
+    }
+  }
+  useEffect(() => {
+    testBlockchainConnection()
+  }, [account])
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -135,6 +157,45 @@ const Settings = () => {
                 {user?.isVerified ? 'Verified' : 'Pending Verification'}
               </p>
             </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Blockchain connection */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="card"
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <FiLink className="text-primary-400" />
+          Blockchain
+        </h2>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
+            <div>
+              <p className="text-sm text-gray-400">Contract address</p>
+              <p className="text-white font-mono text-sm">{shortenAddress(getContractAddress(), 12)}</p>
+            </div>
+            <button onClick={handleCopyContract} className="btn-icon">
+              <FiCopy size={16} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
+            <div>
+              <p className="text-sm text-gray-400">Connection</p>
+              <p className={blockchainStatus.ready ? 'text-green-400' : 'text-amber-400'}>
+                {blockchainStatus.ready ? '✓ Connected' : (blockchainStatus.error || 'Unknown')}
+              </p>
+            </div>
+            <button
+              onClick={testBlockchainConnection}
+              disabled={testingConnection}
+              className="px-4 py-2 rounded-lg bg-primary-500/20 text-primary-400 border border-primary-500/40 hover:bg-primary-500/30 disabled:opacity-50"
+            >
+              {testingConnection ? 'Testing…' : 'Test'}
+            </button>
           </div>
         </div>
       </motion.div>
@@ -231,6 +292,33 @@ const Settings = () => {
         </div>
       </motion.div>
 
+      {/* Blockchain Setup */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className={`card border-2 ${blockchainStatus.ready ? 'border-primary-500/30' : 'border-amber-500/30'}`}
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          {blockchainStatus.ready ? <FiCheckCircle className="text-primary-400" /> : <FiAlertCircle className="text-amber-400" />}
+          Blockchain Setup
+          {blockchainStatus.ready && <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-300">Ready</span>}
+        </h2>
+        {!blockchainStatus.ready && (
+          <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <p className="text-amber-300 text-sm font-medium mb-2">To use blockchain (create batches, prescriptions):</p>
+            <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
+              <li>Terminal 1: <code className="bg-black/30 px-2 py-0.5 rounded">npx hardhat node</code></li>
+              <li>Terminal 2: <code className="bg-black/30 px-2 py-0.5 rounded">npm run deploy</code></li>
+              <li>Enable Dev Mode below, then refresh</li>
+            </ol>
+          </div>
+        )}
+        <button onClick={testBlockchainConnection} disabled={testingConnection} className="btn-secondary w-full mb-4">
+          {testingConnection ? 'Testing...' : 'Test Connection'}
+        </button>
+      </motion.div>
+
       {/* Network & Contract */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -264,7 +352,7 @@ const Settings = () => {
           <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
             <div className="flex-1 mr-4">
               <p className="text-sm text-gray-400">Smart Contract</p>
-              <p className="text-white font-mono text-sm break-all">{CONTRACT_ADDRESS}</p>
+              <p className="text-white font-mono text-sm break-all">{getContractAddress()}</p>
             </div>
             <button onClick={handleCopyContract} className="btn-icon">
               <FiCopy size={16} />

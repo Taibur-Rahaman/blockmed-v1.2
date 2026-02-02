@@ -59,7 +59,7 @@ const Analytics = () => {
       // Check if blockchain is ready
       const ready = await isBlockchainReady()
       if (!ready.ready) {
-        console.warn('Blockchain not ready:', ready.error)
+        toast.error(ready.error || 'Blockchain not connected')
         setLoading(false)
         return
       }
@@ -93,6 +93,7 @@ const Analytics = () => {
       }
     } catch (error) {
       console.error('Error loading analytics:', error)
+      toast.error(error?.message || 'Failed to load analytics. Is blockchain running?')
     } finally {
       setLoading(false)
     }

@@ -66,6 +66,8 @@ contract BlockMedV2 {
         bool isFlagged;
         string flagReason;
         uint256 createdAt;
+        uint256 totalUnits;     // Total units/boxes in this batch when created
+        uint256 dispensedUnits; // Units sold/dispensed - remaining = totalUnits - dispensedUnits
     }
 
     // ============================================
@@ -127,6 +129,13 @@ contract BlockMedV2 {
         uint256 timestamp
     );
     
+    event PrescriptionRevoked(
+        uint256 indexed id,
+        address indexed revokedBy,
+        string reason,
+        uint256 timestamp
+    );
+    
     event BatchCreated(
         uint256 indexed id,
         string batchNumber,
@@ -156,6 +165,15 @@ contract BlockMedV2 {
         string batchNumber,
         string alertType,
         address indexed reportedBy,
+        uint256 timestamp
+    );
+    
+    event BatchDispensed(
+        uint256 indexed batchId,
+        string batchNumber,
+        uint256 quantity,
+        uint256 remainingUnits,
+        address indexed dispensedBy,
         uint256 timestamp
     );
 
@@ -291,7 +309,8 @@ contract BlockMedV2 {
     // ============================================
     
     /**
-     * @dev Create a new prescription (Doctor only)
+     * @dev Create a new prescription (Doctor only).
+     *      For production/privacy: pass only keccak256(salt || patientId) as _patientHash — never raw PII on-chain.
      */
     function createPrescription(
         string memory _patientHash,
@@ -404,6 +423,23 @@ contract BlockMedV2 {
     }
     
     /**
+     * @dev Revoke a prescription (prescribing doctor or admin). Sets isActive = false; audit trail preserved.
+     */
+    function revokePrescription(uint256 _prescriptionId, string memory _reason) external {
+        Prescription storage presc = prescriptions[_prescriptionId];
+        require(presc.id != 0, "Prescription does not exist");
+        require(presc.isActive, "Prescription not active");
+        
+        bool isPrescribingDoctor = users[msg.sender].role == Role.Doctor && presc.doctor == msg.sender;
+        bool isAdmin = users[msg.sender].role == Role.Admin || msg.sender == owner;
+        require(isPrescribingDoctor || isAdmin, "Not authorized to revoke");
+        
+        presc.isActive = false;
+        
+        emit PrescriptionRevoked(_prescriptionId, msg.sender, _reason, block.timestamp);
+    }
+    
+    /**
      * @dev Get prescription details
      */
     function getPrescription(uint256 _id) external view returns (Prescription memory) {
@@ -452,6 +488,7 @@ contract BlockMedV2 {
     
     /**
      * @dev Create a new medicine batch (Manufacturer only)
+     * @param _totalUnits Total units/boxes in this batch (use 0 for legacy "no quantity tracking")
      */
     function createMedicineBatch(
         string memory _batchNumber,
@@ -459,7 +496,8 @@ contract BlockMedV2 {
         string memory _genericName,
         uint256 _expiresAt,
         string memory _origin,
-        string memory _ipfsHash
+        string memory _ipfsHash,
+        uint256 _totalUnits
     ) external onlyManufacturer returns (uint256) {
         require(bytes(_batchNumber).length > 0, "Batch number cannot be empty");
         require(batchNumberToId[_batchNumber] == 0, "Batch number already exists");
@@ -481,7 +519,9 @@ contract BlockMedV2 {
             recallReason: "",
             isFlagged: false,
             flagReason: "",
-            createdAt: block.timestamp
+            createdAt: block.timestamp,
+            totalUnits: _totalUnits,
+            dispensedUnits: 0
         });
         
         batchNumberToId[_batchNumber] = batchCount;
@@ -496,6 +536,36 @@ contract BlockMedV2 {
         );
         
         return batchCount;
+    }
+    
+    /**
+     * @dev Dispense/sell units from a batch (Pharmacist only)
+     * Reduces remaining units - helps detect counterfeit copies (if sold > total = fake)
+     * @param _batchId Batch ID
+     * @param _quantity Number of units customer purchased
+     */
+    function dispenseFromBatch(uint256 _batchId, uint256 _quantity) external onlyPharmacist {
+        MedicineBatch storage batch = medicineBatches[_batchId];
+        require(batch.id != 0, "Batch does not exist");
+        require(!batch.isRecalled, "Cannot dispense recalled batch");
+        require(block.timestamp < batch.expiresAt, "Cannot dispense expired batch");
+        require(batch.totalUnits > 0, "Quantity tracking not enabled for this batch");
+        require(_quantity > 0, "Quantity must be greater than zero");
+        require(batch.dispensedUnits + _quantity <= batch.totalUnits, "Insufficient units - possible counterfeit");
+        
+        batch.dispensedUnits += _quantity;
+        totalDispensations += _quantity;
+        
+        uint256 remaining = batch.totalUnits - batch.dispensedUnits;
+        
+        emit BatchDispensed(
+            _batchId,
+            batch.batchNumber,
+            _quantity,
+            remaining,
+            msg.sender,
+            block.timestamp
+        );
     }
     
     /**

@@ -9,10 +9,13 @@
     "preview": "vite preview",
     "blockchain": "npx hardhat node",
     "ganache": "npx ganache --chain.chainId 31337 --wallet.deterministic --server.host 127.0.0.1 --server.port 8545",
-    "deploy": "npx hardhat run scripts/deploy.cjs --network localhost",
-    "deploy:check": "npx hardhat run scripts/check-and-deploy.cjs --network localhost",
+    "deploy": "npx hardhat run scripts/check-and-deploy.cjs --network localhost",
+    "deploy:raw": "npx hardhat run scripts/deploy.cjs --network localhost",
     "deploy:polygon": "npx hardhat run scripts/deploy.js --network polygon",
+    "test": "npm run test:blockchain",
     "test:blockchain": "npx hardhat test",
+    "indexer": "node scripts/indexer/index.js",
+    "lint:sol": "solhint 'contracts/**/*.sol'",
     "fund": "echo 'Usage: RECIPIENT_ADDRESS=0x... npm run fund' && npx hardhat run scripts/fund-wallet.cjs --network localhost",
     "start": "echo '🚀 Starting BlockMed...' && npm run ganache & sleep 3 && npm run deploy && npm run dev"
   },
@@ -37,6 +40,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^4.9.6",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
@@ -44,6 +48,9 @@
     "ganache": "^7.9.2",
     "hardhat": "^2.19.4",
     "postcss": "^8.4.32",
+    "better-sqlite3": "^11.6.0",
+    "express": "^4.21.0",
+    "solhint": "^4.5.4",
     "tailwindcss": "^3.3.6",
     "vite": "^5.0.8"
   }

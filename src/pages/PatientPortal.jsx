@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { ethers } from 'ethers'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import {
@@ -10,8 +9,7 @@ import {
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
-import { CONTRACT_ADDRESS } from '../utils/config'
-import contractABI from '../utils/contractABI.json'
+import { getReadContract, isBlockchainReady } from '../utils/contractHelper'
 import { formatTimestamp, shortenAddress, isExpired, daysUntilExpiry } from '../utils/helpers'
 
 const PatientPortal = () => {
@@ -23,14 +21,16 @@ const PatientPortal = () => {
   const [loading, setLoading] = useState(false)
   const [selectedPrescription, setSelectedPrescription] = useState(null)
 
-  // Search prescriptions
+  // Search prescriptions (works with Dev Mode and Wallet)
   const searchPrescriptions = async () => {
     if (!patientHash.trim()) {
       toast.error('Please enter your Patient ID')
       return
     }
-    if (!window.ethereum) {
-      toast.error('MetaMask not detected')
+
+    const ready = await isBlockchainReady()
+    if (!ready.ready) {
+      toast.error(ready.error || 'Blockchain not connected. Connect wallet or use Dev Mode.')
       return
     }
 
@@ -38,10 +38,8 @@ const PatientPortal = () => {
     setPrescriptions([])
 
     try {
-  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
-
-      const prescriptionIds = await contract.getPrescriptionsByPatient(patientHash)
+      const contract = await getReadContract()
+      const prescriptionIds = await contract.getPrescriptionsByPatient(patientHash.trim())
       
       const results = []
       for (const id of prescriptionIds) {

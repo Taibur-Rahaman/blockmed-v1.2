@@ -37,6 +37,26 @@ export async function getProvider() {
 }
 
 /**
+ * Parse contract error for user-friendly message
+ */
+function parseContractError(error) {
+  if (!error) return null
+  const msg = String(error.message || error.reason || '')
+  // Solidity revert with reason
+  if (error.reason) return error.reason
+  // Common ethers/contract errors
+  if (msg.includes('call revert exception')) {
+    const reason = error.data?.error?.message || error.error?.reason
+    if (reason) return reason
+  }
+  // User-friendly mapping for common errors
+  if (msg.includes('missing role') || msg.includes('AccessControl')) return 'Permission denied. Check your role.'
+  if (msg.includes('already registered')) return 'Already registered.'
+  if (msg.includes('not found') || msg.includes('does not exist')) return 'Record not found.'
+  return null
+}
+
+/**
  * Get the appropriate signer (Dev Mode or Wallet)
  */
 export async function getSigner() {
@@ -44,9 +64,13 @@ export async function getSigner() {
   if (isDevMode()) {
     console.log('📦 Using Dev Mode signer')
     try {
-      return getDevSigner()
+      const signer = getDevSigner()
+      if (!signer) throw new Error('No signer')
+      return signer
     } catch (error) {
-      throw new Error(`Dev Mode signer error: ${error.message}. Make sure Hardhat is running.`)
+      const { disableDevMode } = await import('./devMode')
+      disableDevMode()
+      throw new Error('Hardhat disconnected. Run "npx hardhat node" in a terminal, then enable Dev Mode again in Settings.')
     }
   }
   
@@ -132,35 +156,41 @@ export async function getCurrentAccount() {
 }
 
 /**
- * Check if blockchain is ready (Hardhat running + account available)
+ * Check if blockchain is ready (works for both Dev Mode and Wallet Mode).
+ * Dev Mode: requires Hardhat running.
+ * Wallet Mode: requires wallet connected and contract deployed on current chain.
  */
 export async function isBlockchainReady() {
   try {
-    // Check Hardhat connection
-    const hardhatOk = await testHardhatConnection()
-    if (!hardhatOk) {
-      return { ready: false, error: 'Hardhat not running' }
+    // Dev Mode: require Hardhat
+    if (isDevMode()) {
+      const hardhatOk = await testHardhatConnection()
+      if (!hardhatOk) {
+        return { ready: false, error: 'Hardhat not running. Run: npm run blockchain' }
+      }
+    } else if (!window?.ethereum) {
+      return { ready: false, error: 'No wallet. Connect MetaMask or enable Dev Mode.' }
     }
-    
-    // Check account
+
+    // Account (Dev or Wallet)
     const account = await getCurrentAccount()
     if (!account) {
-      return { ready: false, error: 'No account connected' }
+      return { ready: false, error: 'No account. Connect wallet or enable Dev Mode.' }
     }
-    
-    // Check contract exists
+
+    // Contract must exist on current chain
     const provider = await getProvider()
     const code = await provider.getCode(CONTRACT_ADDRESS)
     if (code === '0x' || code === '0x0' || !code) {
-      return { 
-        ready: false, 
-        error: `Contract not deployed at ${CONTRACT_ADDRESS}. Run: npm run deploy:check` 
+      return {
+        ready: false,
+        error: `Contract not deployed at ${CONTRACT_ADDRESS.slice(0, 10)}... Run: npm run deploy`
       }
     }
-    
+
     return { ready: true, account }
   } catch (error) {
-    return { ready: false, error: error.message }
+    return { ready: false, error: error?.message || 'Connection failed' }
   }
 }
 
@@ -204,11 +234,40 @@ export async function executeContract(methodName, args = [], options = {}) {
     }
   } catch (error) {
     console.error(`❌ Contract error (${methodName}):`, error)
+    const friendly = parseContractError(error)
     return { 
       success: false, 
-      error: error.reason || error.message || 'Unknown error' 
+      error: friendly || error.reason || error.shortMessage || error.message || 'Unknown error' 
     }
   }
+}
+
+/**
+ * Get user-friendly error message for contract/wallet errors
+ */
+export function getFriendlyErrorMessage(error) {
+  if (!error) return 'An error occurred'
+  const msg = String(error.message || '')
+  if (msg.includes('Hardhat disconnected') || msg.includes('Hardhat node')) {
+    return 'Blockchain not connected. Run "npx hardhat node" in a terminal, then enable Dev Mode in Settings.'
+  }
+  if (msg.includes('Wallet not connected') || msg.includes('No signer')) {
+    return 'Connect your wallet or enable Dev Mode in Settings.'
+  }
+  if (msg.includes('Contract not deployed') || msg.includes('not deployed')) {
+    return 'Contract not deployed. Run "npm run deploy" (with Hardhat node running).'
+  }
+  if (msg.includes('user rejected') || msg.includes('rejected')) {
+    return 'Transaction was cancelled.'
+  }
+  const contractMsg = parseContractError(error)
+  if (contractMsg) return contractMsg
+  return error.reason || error.shortMessage || msg || 'Operation failed'
+}
+
+/** Contract address (single source of truth) */
+export function getContractAddress() {
+  return CONTRACT_ADDRESS
 }
 
 // Export all
@@ -220,5 +279,7 @@ export default {
   getCurrentAccount,
   isBlockchainReady,
   getBalance,
-  executeContract
+  executeContract,
+  getContractAddress,
+  getFriendlyErrorMessage,
 }

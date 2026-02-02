@@ -10,6 +10,7 @@ import {
 import { useStore } from '../store/useStore'
 import { formatTimestamp, shortenAddress, getRoleName } from '../utils/helpers'
 import { getReadContract, getProvider } from '../utils/contractHelper'
+import { BlockchainBadge } from '../components/BlockchainInfo'
 import { isDevMode } from '../utils/devMode'
 import toast from 'react-hot-toast'
 
@@ -98,7 +99,7 @@ const ActivityLog = () => {
         currentBlock = await provider.getBlockNumber()
       } catch (error) {
         console.error('Error getting block number:', error)
-        toast.error('Failed to connect to blockchain')
+        toast.error('Blockchain not reachable. Start it: npm run blockchain, then npm run deploy')
         setLoading(false)
         return
       }
@@ -108,28 +109,56 @@ const ActivityLog = () => {
       
       // Fetch all relevant events
       try {
-        // PrescriptionAdded events
+        // PrescriptionCreated events (BlockMedV2)
         try {
-          const prescriptionAddedFilter = contract.filters.PrescriptionAdded()
-          const prescriptionAddedEvents = await contract.queryFilter(prescriptionAddedFilter, fromBlock)
-        
-          prescriptionAddedEvents.forEach((event) => {
-            allActivities.push({
-              id: `prescription-${event.args.id}-${event.blockNumber}`,
-              type: 'PrescriptionAdded',
-              timestamp: event.blockNumber, // Will convert to actual timestamp
-              blockNumber: event.blockNumber,
-              transactionHash: event.transactionHash,
-              prescriptionId: Number(event.args.id),
-              doctor: event.args.doctor,
-              patientHash: event.args.patientHash,
-              data: {
+          const prescriptionCreatedFilter = contract.filters.PrescriptionCreated?.()
+          if (prescriptionCreatedFilter) {
+            const prescriptionCreatedEvents = await contract.queryFilter(prescriptionCreatedFilter, fromBlock)
+            prescriptionCreatedEvents.forEach((event) => {
+              allActivities.push({
+                id: `prescription-${event.args.id}-${event.blockNumber}`,
+                type: 'PrescriptionAdded',
+                timestamp: event.blockNumber,
+                blockNumber: event.blockNumber,
+                transactionHash: event.transactionHash,
                 prescriptionId: Number(event.args.id),
                 doctor: event.args.doctor,
-                patientHash: event.args.patientHash
-              }
+                patientHash: event.args.patientHash,
+                data: {
+                  prescriptionId: Number(event.args.id),
+                  doctor: event.args.doctor,
+                  patientHash: event.args.patientHash
+                }
+              })
             })
-          })
+          }
+        } catch (error) {
+          console.warn('Error loading PrescriptionCreated events:', error)
+        }
+
+        // PrescriptionAdded events (BlockMed V1 legacy)
+        try {
+          const prescriptionAddedFilter = contract.filters.PrescriptionAdded?.()
+          if (prescriptionAddedFilter) {
+            const prescriptionAddedEvents = await contract.queryFilter(prescriptionAddedFilter, fromBlock)
+            prescriptionAddedEvents.forEach((event) => {
+              allActivities.push({
+                id: `prescription-${event.args.id}-${event.blockNumber}`,
+                type: 'PrescriptionAdded',
+                timestamp: event.blockNumber,
+                blockNumber: event.blockNumber,
+                transactionHash: event.transactionHash,
+                prescriptionId: Number(event.args.id),
+                doctor: event.args.doctor,
+                patientHash: event.args.patientHash,
+                data: {
+                  prescriptionId: Number(event.args.id),
+                  doctor: event.args.doctor,
+                  patientHash: event.args.patientHash
+                }
+              })
+            })
+          }
         } catch (error) {
           console.warn('Error loading PrescriptionAdded events:', error)
         }
@@ -363,7 +392,7 @@ const ActivityLog = () => {
       }
     } catch (error) {
       console.error('Error initializing activity log:', error)
-      toast.error(`Failed to connect to blockchain: ${error.message || error}`)
+      toast.error(`Blockchain error: ${error.message || error}. Is the chain running? (npm run blockchain)`)
     } finally {
       setLoading(false)
     }
@@ -628,9 +657,10 @@ const ActivityLog = () => {
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <FiActivity className="text-primary-400" />
               Activity Log
+              <BlockchainBadge label="On-chain events" className="ml-2" />
             </h1>
             <p className="text-gray-400 mt-1">
-              Complete audit trail of all blockchain events and system activities
+              Audit trail of blockchain events (prescriptions, batches, verifications)
             </p>
           </div>
           <div className="flex items-center gap-3">

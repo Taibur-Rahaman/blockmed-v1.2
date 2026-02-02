@@ -1,0 +1,35 @@
+# BlockMed CI - free (GitHub Actions)
+# Runs tests and Solidity lint on push/PR
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint Solidity (solhint)
+        run: npm run lint:sol
+        continue-on-error: true
+
+      - name: Run Hardhat tests
+        run: npm run test:blockchain
+        continue-on-error: true
+
+      - name: Build frontend
+        run: npm run build

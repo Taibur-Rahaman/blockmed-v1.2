@@ -238,41 +238,29 @@ const PrescriptionTemplates = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header + Search in one card */}
       <div className="card">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
               <FiFileText className="text-primary-400" />
-              Prescription Templates
+              Templates
             </h1>
-            <p className="text-gray-400 mt-1">
-              Save and reuse common prescription patterns to speed up prescription creation
-            </p>
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                className="form-input pl-9 py-2 text-sm"
+                placeholder="Search by name or category..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleCreateTemplate}
-              className="btn-primary"
-            >
-              <FiPlus size={18} />
-              Create Template
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="card">
-        <div className="relative">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            className="form-input pl-10"
-            placeholder="Search templates by name, category, or diagnosis..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <button onClick={handleCreateTemplate} className="btn-primary shrink-0">
+            <FiPlus size={18} />
+            Create Template
+          </button>
         </div>
       </div>
 
@@ -299,86 +287,47 @@ const PrescriptionTemplates = () => {
           )}
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTemplates.map((template) => (
             <motion.div
               key={template.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="card hover:bg-white/5 transition-colors"
+              className="card p-4 hover:bg-white/5 transition-colors"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiTag className="text-primary-400" size={16} />
-                    <span className="text-xs px-2 py-1 rounded-full bg-primary-500/20 text-primary-400">
-                      {categories.find(c => c.value === template.category)?.label || 'General'}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-1">
-                    {template.name}
-                  </h3>
-                  {template.description && (
-                    <p className="text-sm text-gray-400 line-clamp-2">
-                      {template.description}
-                    </p>
-                  )}
-                </div>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <h3 className="font-semibold text-white truncate flex-1">{template.name}</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400 shrink-0">
+                  {categories.find(c => c.value === template.category)?.label || 'General'}
+                </span>
               </div>
-
-              {/* Template Info */}
-              <div className="space-y-2 mb-4">
-                {template.diagnosis && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <FiHeart size={14} className="text-gray-400" />
-                    <span className="text-gray-300 truncate">{template.diagnosis}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm">
-                  <FiPackage size={14} className="text-gray-400" />
-                  <span className="text-gray-300">
-                    {template.medicines?.length || 0} {template.medicines?.length === 1 ? 'medicine' : 'medicines'}
-                  </span>
-                </div>
-                {template.updatedAt && (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <FiClock size={12} />
-                    <span className="text-xs">
-                      Updated {new Date(template.updatedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 pt-4 border-t border-white/10">
+              {template.diagnosis && (
+                <p className="text-sm text-gray-400 truncate mb-2">{template.diagnosis}</p>
+              )}
+              <p className="text-xs text-gray-500 mb-3">
+                <FiPackage className="inline mr-1" size={12} />
+                {template.medicines?.length || 0} medicines
+              </p>
+              <div className="flex items-center gap-2 pt-3 border-t border-white/10">
                 <button
                   onClick={() => handleApplyTemplate(template)}
-                  className="btn-primary flex-1 text-sm"
+                  className="btn-primary flex-1 text-sm py-2"
                 >
-                  <FiCopy size={14} />
                   Apply
                 </button>
                 <button
                   onClick={() => handleEditTemplate(template)}
                   className="btn-secondary p-2"
-                  title="Edit template"
+                  title="Edit"
                 >
-                  <FiEdit2 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDuplicateTemplate(template)}
-                  className="btn-secondary p-2"
-                  title="Duplicate template"
-                >
-                  <FiCopy size={16} />
+                  <FiEdit2 size={14} />
                 </button>
                 <button
                   onClick={() => handleDeleteTemplate(template.id)}
-                  className="btn-danger p-2"
-                  title="Delete template"
+                  className="p-2 rounded-lg hover:bg-red-500/20 text-red-400"
+                  title="Delete"
                 >
-                  <FiTrash2 size={16} />
+                  <FiTrash2 size={14} />
                 </button>
               </div>
             </motion.div>

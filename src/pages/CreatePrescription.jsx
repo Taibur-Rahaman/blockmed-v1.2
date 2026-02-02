@@ -5,7 +5,6 @@ import { FiX } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { ethers } from 'ethers'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import { 
@@ -17,13 +16,13 @@ import {
 
 import { useStore } from '../store/useStore'
 import { usePrescriptionStore } from '../store/useStore'
-import { CONTRACT_ADDRESS, GENDER_OPTIONS, VALIDITY_OPTIONS, API } from '../utils/config'
-import contractABI from '../utils/contractABI.json'
+import { GENDER_OPTIONS, VALIDITY_OPTIONS, API } from '../utils/config'
+import { getWriteContract, getCurrentAccount, isBlockchainReady, getContractAddress } from '../utils/contractHelper'
 import { 
   calculateAge, generatePatientHash, copyToClipboard, formatDate,
   isUserRestricted, getUserRestriction
 } from '../utils/helpers'
-import { getWriteContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
+import { BlockchainInfo } from '../components/BlockchainInfo'
 import staticMedicines from '../data/medicines.json'
 
 const CreatePrescription = () => {
@@ -58,7 +57,7 @@ const CreatePrescription = () => {
     advice, setAdvice,
     followUp, setFollowUp,
     validityDays, setValidityDays,
-    patientHash, ipfsHash, qrData, prescriptionId, txHash,
+    patientHash, ipfsHash, qrData, prescriptionId, txHash, blockNumber,
     setGeneratedData, reset
   } = prescriptionStore
 
@@ -368,9 +367,7 @@ const CreatePrescription = () => {
 
       console.log('⏳ Transaction sent:', tx.hash)
       const receipt = await tx.wait()
-      console.log('✅ Transaction confirmed in block:', receipt.blockNumber)
-      
-      // Get prescription ID
+      const newBlock = receipt?.blockNumber ?? null
       const count = await contract.prescriptionCount()
       const newId = Number(count)
 
@@ -384,6 +381,7 @@ const CreatePrescription = () => {
         }),
         prescriptionId: newId,
         txHash: tx.hash,
+        blockNumber: newBlock,
       })
 
       toast.dismiss()
@@ -1154,67 +1152,66 @@ const CreatePrescription = () => {
                 )}
               </div>
 
+              {/* Blockchain: how it works + proof */}
+              {txHash && (
+                <div className="card">
+                  <BlockchainInfo
+                    title="Saved on blockchain"
+                    prescriptionId={prescriptionId}
+                    txHash={txHash}
+                    blockNumber={blockNumber}
+                    contractAddress={getContractAddress()}
+                  />
+                  <p className="text-xs text-gray-400 mt-3">
+                    This prescription is stored on-chain. The transaction hash and block prove it; anyone can verify.
+                  </p>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="card">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-3">
                   {!txHash ? (
                     <>
-                      <button onClick={handleGenerate} className="btn-secondary flex-1">
+                      <button onClick={handleGenerate} className="btn-secondary">
                         <FiRefreshCw size={18} />
                         Regenerate
                       </button>
-                      <button onClick={handlePrint} className="btn-secondary flex-1">
+                      <button onClick={handlePrint} className="btn-secondary">
                         <FiPrinter size={18} />
-                        {t('prescription.printPrescription')}
+                        Print
                       </button>
                       <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !patientHash}
-                        className="btn-primary flex-1"
+                        className="btn-primary"
                       >
                         {isSubmitting ? (
                           <>
                             <span className="loader w-5 h-5" />
-                            {t('prescription.submitting')}
+                            Submitting to blockchain…
                           </>
                         ) : (
                           <>
                             <FiCheck size={18} />
-                            {t('prescription.submitToBlockchain')}
+                            Submit to blockchain
                           </>
                         )}
                       </button>
                     </>
                   ) : (
                     <>
-                      <button onClick={handlePrint} className="btn-secondary flex-1">
+                      <button onClick={handlePrint} className="btn-secondary">
                         <FiPrinter size={18} />
-                        {t('prescription.printPrescription')}
+                        Print
                       </button>
-                      <button
-                        onClick={() => copyToClipboard(txHash)}
-                        className="btn-secondary flex-1"
-                      >
-                        <FiCopy size={18} />
-                        Copy TX Hash
-                      </button>
-                      <button onClick={handleCreateAnother} className="btn-primary flex-1">
+                      <button onClick={handleCreateAnother} className="btn-primary">
                         <FiPlus size={18} />
-                        {t('prescription.createAnother')}
+                        Create another
                       </button>
                     </>
                   )}
                 </div>
-
-                {txHash && (
-                  <div className="alert alert-success mt-4">
-                    <FiCheck size={20} />
-                    <div>
-                      <p className="font-medium">Prescription submitted successfully!</p>
-                      <p className="text-sm mt-1 font-mono break-all">{txHash}</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}

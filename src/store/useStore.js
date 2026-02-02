@@ -120,6 +120,10 @@ export const useStore = create(
         lastSyncTime: new Date().toISOString()
       }),
 
+      // Demo batch stock sync - when Pharmacy confirms purchase (demo), Batch Management re-renders
+      demoBatchesVersion: 0,
+      incrementDemoBatchesVersion: () => set((state) => ({ demoBatchesVersion: state.demoBatchesVersion + 1 })),
+
       // ============================================
       // UI State
       // ============================================
@@ -147,12 +151,9 @@ export const useStore = create(
     }),
     {
       name: 'blockmed-storage',
+      // Do NOT persist sensitive auth state (account, user, role, isVerified) to localStorage
+      // so other users on same device / XSS cannot see wallet or role. See DRAWBACKS_REAL_LIFE_AND_FREE_TOOLS.md
       partialize: (state) => ({
-        account: state.account,
-        user: state.user,
-        role: state.role,
-        isConnected: state.isConnected,
-        isVerified: state.isVerified,
         language: state.language,
         theme: state.theme,
         cachedPrescriptions: state.cachedPrescriptions,
@@ -205,6 +206,7 @@ export const usePrescriptionStore = create((set, get) => ({
   qrData: '',
   prescriptionId: null,
   txHash: '',
+  blockNumber: null,
   
   // Actions
   setPatient: (field, value) => set((state) => ({
@@ -257,6 +259,7 @@ export const usePrescriptionStore = create((set, get) => ({
     qrData: '',
     prescriptionId: null,
     txHash: '',
+    blockNumber: null,
   }),
 }))
 

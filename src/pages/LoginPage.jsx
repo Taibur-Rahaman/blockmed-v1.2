@@ -473,7 +473,8 @@ const LoginPage = () => {
                   {hardhatRunning ? '✅ Hardhat Running - Ready!' : '❌ Hardhat Not Running'}
                   {!hardhatRunning && (
                     <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
-                      Run: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npx hardhat node</code>
+                      In a terminal: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npm run blockchain</code>
+                      <br />Then: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npm run deploy</code> and refresh.
                     </div>
                   )}
                 </div>

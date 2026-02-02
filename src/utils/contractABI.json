@@ -132,6 +132,49 @@
       },
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "remainingUnits",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "dispensedBy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "BatchDispensed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "batchId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "batchNumber",
+        "type": "string"
+      },
+      {
+        "indexed": false,
         "internalType": "string",
         "name": "alertType",
         "type": "string"
@@ -419,6 +462,11 @@
         "internalType": "string",
         "name": "_ipfsHash",
         "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_totalUnits",
+        "type": "uint256"
       }
     ],
     "name": "createMedicineBatch",
@@ -463,6 +511,24 @@
         "type": "uint256"
       }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_batchId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_quantity",
+        "type": "uint256"
+      }
+    ],
+    "name": "dispenseFromBatch",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -647,6 +713,16 @@
             "internalType": "uint256",
             "name": "createdAt",
             "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalUnits",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "dispensedUnits",
+            "type": "uint256"
           }
         ],
         "internalType": "struct BlockMedV2.MedicineBatch",
@@ -769,6 +845,16 @@
           {
             "internalType": "uint256",
             "name": "createdAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalUnits",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "dispensedUnits",
             "type": "uint256"
           }
         ],

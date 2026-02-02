@@ -33,11 +33,12 @@ async function main() {
   
   console.log("\n🎉 Deployment Complete!");
   console.log("━".repeat(50));
-  console.log("\n📝 Next Steps:");
-  console.log("   1. Copy the contract address above");
-  console.log("   2. Update src/utils/config.js");
-  console.log("   3. Run: npm run dev");
-  console.log("   4. Connect MetaMask and start using BlockMed V2!");
+  console.log("\n📝 Next Steps (data persists only if you keep this address):");
+  console.log("   1. Add to .env so data is never 'lost' when you restart:");
+  console.log(`      VITE_CONTRACT_ADDRESS=${contractAddress}`);
+  console.log("   2. Restart the app: npm run dev");
+  console.log("   3. Connect wallet / Dev Mode and use BlockMed V2.");
+  console.log("\n   See BLOCKCHAIN_DATA_PERSISTENCE.md for how data is stored and how to find old data.");
 }
 
 main()

@@ -10,6 +10,7 @@ import {
 import { useStore } from '../store/useStore'
 import { shortenAddress, getRoleName, getRoleColorClass, hasFeatureAccess } from '../utils/helpers'
 import { disableDevMode } from '../utils/devMode'
+import { useBlockchain } from '../hooks/useBlockchain'
 
 const Layout = ({ children }) => {
   const { t } = useTranslation()
@@ -25,6 +26,7 @@ const Layout = ({ children }) => {
 
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const { connected, networkName, isDevMode: devMode, refresh } = useBlockchain()
 
   const handleLogout = () => {
     // Disable Dev Mode if enabled
@@ -194,6 +196,25 @@ const Layout = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Blockchain connection status - trust indicator */}
+            {account && (
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                  connected ? 'bg-primary-500/10 border-primary-500/30' : 'bg-amber-500/10 border-amber-500/30'
+                }`}
+                title={connected ? `Verified on blockchain • ${networkName}` : 'Reconnecting...'}
+              >
+                <FiLayers size={14} className={connected ? 'text-primary-400' : 'text-amber-400 animate-pulse'} />
+                <span className={`text-xs font-medium hidden sm:inline ${
+                  connected ? 'text-primary-300' : 'text-amber-300'
+                }`}>
+                  {connected ? (devMode ? 'Hardhat • On-chain' : `${networkName} • Verified`) : '…'}
+                </span>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                  connected ? 'bg-green-500' : 'bg-amber-500 animate-pulse'
+                }`} />
+              </div>
+            )}
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}

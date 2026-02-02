@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import DatePicker from 'react-datepicker'
-import { ethers } from 'ethers'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import {
@@ -12,15 +11,16 @@ import {
 
 import { useStore } from '../store/useStore'
 import { hasFeatureAccess, isUserRestricted } from '../utils/helpers'
-import { CONTRACT_ADDRESS } from '../utils/config'
-import contractABI from '../utils/contractABI.json'
+import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage } from '../utils/contractHelper'
+import { DEMO_BATCHES } from '../data/demoBatches'
 import { formatTimestamp, shortenAddress, isExpired, getBatchStatus } from '../utils/helpers'
 import { useNavigate } from 'react-router-dom'
+import { BlockchainBadge, BlockchainInfo, BlockchainActivityBadge } from '../components/BlockchainInfo'
 
 const BatchManagement = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { account, role } = useStore()
+  const { account, role, language, demoBatchesVersion, incrementDemoBatchesVersion } = useStore()
 
   // Check access control
   useEffect(() => {
@@ -40,9 +40,12 @@ const BatchManagement = () => {
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [filter, setFilter] = useState('all') // all, flagged, recalled, expired
+  const [filter, setFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [lastTx, setLastTx] = useState({ hash: null, block: null })
+  const [chainReady, setChainReady] = useState(false)
+  const [usingDemoData, setUsingDemoData] = useState(false)
 
   const [formData, setFormData] = useState({
     batchNumber: '',
@@ -50,6 +53,7 @@ const BatchManagement = () => {
     genericName: '',
     expiryDate: null,
     origin: '',
+    totalUnits: '',
   })
 
   // Load batches
@@ -58,13 +62,20 @@ const BatchManagement = () => {
   }, [account])
 
   const loadBatches = async () => {
-    if (!window.ethereum) return
+    const ready = await isBlockchainReady()
+    if (!ready.ready) {
+      setChainReady(false)
+      setUsingDemoData(true)
+      setBatches(DEMO_BATCHES)
+      setLoading(false)
+      return
+    }
 
+    setChainReady(true)
+    setBatches(DEMO_BATCHES) // Show demo immediately while loading from chain
     setLoading(true)
     try {
-  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider)
-
+      const contract = await getReadContract()
       const batchCount = await contract.batchCount()
       const results = []
 
@@ -83,12 +94,18 @@ const BatchManagement = () => {
           recallReason: b.recallReason,
           isFlagged: b.isFlagged,
           flagReason: b.flagReason,
+          totalUnits: Number(b.totalUnits ?? 0),
+          dispensedUnits: Number(b.dispensedUnits ?? 0),
         })
       }
 
-      setBatches(results.reverse())
+      // Use demo data when chain has no batches (helps demos & onboarding)
+      const hasRealBatches = results.length > 0
+      setUsingDemoData(!hasRealBatches)
+      setBatches(hasRealBatches ? results.reverse() : DEMO_BATCHES)
     } catch (error) {
       console.error('Error loading batches:', error)
+      toast.error(error?.message || 'Failed to load batches. Is blockchain running?')
     } finally {
       setLoading(false)
     }
@@ -113,33 +130,83 @@ const BatchManagement = () => {
   const handleCreateBatch = async (e) => {
     e.preventDefault()
 
-    if (!formData.batchNumber || !formData.medicineName || !formData.expiryDate) {
-      toast.error('Please fill all required fields')
+    const batchNum = String(formData.batchNumber || '').trim()
+    const medName = String(formData.medicineName || '').trim()
+    if (!batchNum || !medName) {
+      toast.error(language === 'bn' ? 'ব্যাচ নম্বর ও ওষুধের নাম পূরণ করুন' : 'Fill batch number and medicine name')
+      return
+    }
+    if (!formData.expiryDate) {
+      toast.error(language === 'bn' ? 'মেয়াদ উত্তীর্ণের তারিখ নির্বাচন করুন' : 'Select expiry date')
       return
     }
 
     setSubmitting(true)
 
-    try {
-  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
+    // Demo mode: simulate batch creation locally (no blockchain)
+    if (usingDemoData) {
+      if (DEMO_BATCHES.some(b => String(b.batchNumber).toLowerCase() === batchNum.toLowerCase())) {
+        toast.error(language === 'bn' ? 'এই ব্যাচ নম্বর ইতিমধ্যে আছে' : 'Batch number already exists')
+        setSubmitting(false)
+        return
+      }
+      const now = Math.floor(Date.now() / 1000)
+      const expiryTs = Math.floor(formData.expiryDate.getTime() / 1000)
+      const totalUnits = parseInt(String(formData.totalUnits || '0'), 10) || 0
+      const newId = Math.max(...DEMO_BATCHES.map(b => b.id), 0) + 1
+      DEMO_BATCHES.unshift({
+        id: newId,
+        batchNumber: batchNum,
+        medicineName: medName,
+        genericName: String(formData.genericName || '').trim(),
+        manufacturer: '',
+        manufacturedAt: now,
+        expiresAt: expiryTs,
+        origin: String(formData.origin || '').trim(),
+        isRecalled: false,
+        recallReason: '',
+        isFlagged: false,
+        flagReason: '',
+        totalUnits: Math.max(0, totalUnits),
+        dispensedUnits: 0,
+      })
+      incrementDemoBatchesVersion()
+      setBatches([...DEMO_BATCHES])
+      toast.success(language === 'bn' ? 'ব্যাচ সিমিউলেটেড হিসাবে তৈরি হয়েছে (ডেমো)' : 'Batch created — simulated (demo)')
+      setShowForm(false)
+      setFormData({
+        batchNumber: '',
+        medicineName: '',
+        genericName: '',
+        expiryDate: null,
+        origin: '',
+        totalUnits: '',
+      })
+      setSubmitting(false)
+      return
+    }
 
+    try {
+      const contract = await getWriteContract()
       const expiryTimestamp = Math.floor(formData.expiryDate.getTime() / 1000)
 
+      const totalUnits = parseInt(String(formData.totalUnits || '0'), 10) || 0
+
       const tx = await contract.createMedicineBatch(
-        formData.batchNumber,
-        formData.medicineName,
-        formData.genericName,
+        batchNum,
+        medName,
+        String(formData.genericName || '').trim(),
         expiryTimestamp,
-        formData.origin,
-        '' // ipfsHash
+        String(formData.origin || '').trim(),
+        '',
+        totalUnits
       )
 
       toast.loading('Creating batch on blockchain...')
-      await tx.wait()
+      const receipt = await tx.wait()
       toast.dismiss()
       toast.success(t('batch.batchCreated'))
+      setLastTx({ hash: tx.hash, block: receipt?.blockNumber ?? null })
 
       setShowForm(false)
       setFormData({
@@ -148,12 +215,13 @@ const BatchManagement = () => {
         genericName: '',
         expiryDate: null,
         origin: '',
+        totalUnits: '',
       })
 
       await loadBatches()
     } catch (error) {
       console.error('Create batch error:', error)
-      toast.error(error.message || 'Failed to create batch')
+      toast.error(getFriendlyErrorMessage(error))
     } finally {
       setSubmitting(false)
     }
@@ -161,24 +229,38 @@ const BatchManagement = () => {
 
   // Recall batch
   const handleRecall = async (batch) => {
-    const reason = prompt('Enter recall reason:')
-    if (!reason) return
+    const reason = prompt(
+      t('batch.recallReason') + '\n(e.g. ' + (t('common.yes') === 'Yes' ? 'contamination, wrong label' : 'দূষণ, ভুল লেবেল') + ')',
+      ''
+    )
+    if (!reason || !reason.trim()) return
+
+    // Demo mode: simulate recall locally
+    if (usingDemoData) {
+      const demo = DEMO_BATCHES.find(b => String(b.batchNumber) === String(batch.batchNumber))
+      if (demo) {
+        demo.isRecalled = true
+        demo.recallReason = reason.trim()
+        incrementDemoBatchesVersion()
+        setBatches([...DEMO_BATCHES])
+        toast.success(language === 'bn' ? 'ব্যাচ সিমিউলেটেড হিসাবে প্রত্যাহার করা হয়েছে (ডেমো)' : 'Batch recalled — simulated (demo)')
+      }
+      return
+    }
 
     try {
-  const provider = window.__sharedBrowserProvider || new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer)
-
+      const contract = await getWriteContract()
       const tx = await contract.recallBatch(batch.id, reason)
       toast.loading('Recalling batch...')
-      await tx.wait()
+      const receipt = await tx.wait()
       toast.dismiss()
       toast.success(t('batch.batchRecalled'))
+      setLastTx({ hash: tx.hash, block: receipt?.blockNumber ?? null })
 
       await loadBatches()
     } catch (error) {
       console.error('Recall error:', error)
-      toast.error(error.message || 'Failed to recall batch')
+      toast.error(getFriendlyErrorMessage(error))
     }
   }
 
@@ -191,8 +273,21 @@ const BatchManagement = () => {
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <FiBox className="text-primary-400" />
               {t('batch.title')}
+              {loading && chainReady ? (
+                <BlockchainActivityBadge loading={true} language={language} label={language === 'bn' ? 'লোড হচ্ছে...' : 'Loading...'} />
+              ) : !usingDemoData ? (
+                <BlockchainBadge label="From blockchain" />
+              ) : (
+                <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                  Demo data
+                </span>
+              )}
             </h1>
-            <p className="text-gray-400 mt-1">{t('batch.subtitle')}</p>
+            <p className="text-gray-400 mt-1">
+              {loading && chainReady
+                ? (language === 'bn' ? 'ব্লকচেইনে ব্যাচ লোড হচ্ছে...' : 'Loading batches from blockchain...')
+                : !usingDemoData ? t('batch.subtitle') : 'Showing demo batches. Connect wallet or enable Dev Mode to create real batches.'}
+            </p>
           </div>
           {(role === 1 || role === 4) && (
             <button onClick={() => setShowForm(true)} className="btn-primary">
@@ -203,6 +298,25 @@ const BatchManagement = () => {
         </div>
       </div>
 
+      {lastTx.hash && (
+        <div className="card">
+          <BlockchainInfo
+            title="Last transaction on-chain"
+            txHash={lastTx.hash}
+            blockNumber={lastTx.block}
+            compact
+          />
+        </div>
+      )}
+
+      {!chainReady && (
+        <div className="card border-amber-500/40 bg-amber-500/10">
+          <p className="text-amber-300 font-medium">
+            {t('common.loading') === 'Loading...' ? 'Blockchain not connected. Connect wallet or Dev Mode to view and create batches.' : 'ব্লকচেইন সংযুক্ত নয়। ব্যাচ দেখতে ও তৈরি করতে ওয়ালেট বা ডেভ মোড চালু করুন।'}
+          </p>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="card">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -211,7 +325,7 @@ const BatchManagement = () => {
             <input
               type="text"
               className="form-input pl-10 w-full"
-              placeholder="Search batches..."
+              placeholder={t('batch.batchNumber') + ' / ' + t('batch.medicineName') + '...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -324,6 +438,21 @@ const BatchManagement = () => {
                   />
                 </div>
 
+                <div className="form-group">
+                  <label className="form-label">{t('batch.totalUnits') || 'Total Units (boxes/packs)'}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="form-input"
+                    value={formData.totalUnits}
+                    onChange={(e) => setFormData({ ...formData, totalUnits: e.target.value })}
+                    placeholder="e.g., 1000 (use 0 for no quantity tracking)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {language === 'bn' ? 'প্রতি ব্যাচে মোট ইউনিট। 0 = পরিমাণ ট্র্যাকিং নেই' : 'Total units in batch. 0 = no quantity tracking'}
+                  </p>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">
                     {t('common.cancel')}
@@ -356,8 +485,23 @@ const BatchManagement = () => {
           ))
         ) : filteredBatches.length === 0 ? (
           <div className="col-span-full card text-center py-12">
-            <FiBox size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">No batches found</p>
+            <FiBox size={48} className="mx-auto text-gray-500 mb-4" />
+            <p className="text-white font-medium mb-2">
+              {batches.length === 0
+                ? (language === 'bn' ? 'এখনও কোনো ব্যাচ নেই' : 'No batches yet')
+                : (language === 'bn' ? 'ফিল্টারে মিলছে না' : 'No batches match filter')}
+            </p>
+            <p className="text-gray-400 mb-4">
+              {batches.length === 0
+                ? (language === 'bn' ? 'প্রথম ব্যাচ তৈরি করুন। ব্লকচেইনে ওষুধ নিবন্ধন করুন।' : 'Create your first batch to register medicine on blockchain.')
+                : (language === 'bn' ? 'অন্য খুঁজুন বা ফিল্টার পরিবর্তন করুন।' : 'Try a different search or filter.')}
+            </p>
+            {batches.length === 0 && (role === 1 || role === 4) && (
+              <button onClick={() => setShowForm(true)} className="btn-primary">
+                <FiPlus size={18} />
+                {t('batch.createBatch')}
+              </button>
+            )}
           </div>
         ) : (
           filteredBatches.map((batch) => {
@@ -418,6 +562,16 @@ const BatchManagement = () => {
                     <p className="flex justify-between">
                       <span className="text-gray-400">Origin:</span>
                       <span className="text-white">{batch.origin}</span>
+                    </p>
+                  )}
+                  {(batch.totalUnits ?? 0) > 0 && (
+                    <p className="flex justify-between">
+                      <span className="text-gray-400">Stock:</span>
+                      <span className={`font-mono font-semibold ${
+                        (batch.totalUnits - (batch.dispensedUnits ?? 0)) <= 0 ? 'text-red-400' : 'text-primary-400'
+                      }`}>
+                        {(batch.totalUnits ?? 0) - (batch.dispensedUnits ?? 0)} / {batch.totalUnits} units
+                      </span>
                     </p>
                   )}
                 </div>
