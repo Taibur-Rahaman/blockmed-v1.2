@@ -22,8 +22,6 @@ Blockchain-based prescription management and anti-fake medicine tracking with **
 | **[START_HERE.md](./START_HERE.md)** | First-time setup and navigation |
 | **[QUICK_START.md](./QUICK_START.md)** | Fast setup (Dev Mode or wallet) |
 | **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)** | How blockchain works (contract, connection, indexer, diagrams) |
-| **[docs/BLOCKMED_BLOCKCHAIN_SUPER_BASIC_BN_EN.md](./docs/BLOCKMED_BLOCKCHAIN_SUPER_BASIC_BN_EN.md)** | Super basic Bangla+English explanation (lecturer-friendly) |
-| **[docs/HOW_PROJECT_WORKS_COMPLETE.md](./docs/HOW_PROJECT_WORKS_COMPLETE.md)** | Complete working explanation - every function, page, component (Bangla+English) |
 | **[BLOCKMED_V2_GUIDE.md](./BLOCKMED_V2_GUIDE.md)** | System guide by role and page |
 | **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Deploy contract and config |
 | **[WALLET_SETUP.md](./WALLET_SETUP.md)** | Dev Mode and MetaMask setup |
