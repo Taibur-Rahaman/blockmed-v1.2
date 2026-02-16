@@ -137,7 +137,7 @@ Visual map:
 
 ```mermaid
 flowchart TB
-  subgraph OnChain[On-chain (Blockchain)]
+  subgraph OnChain [On-chain (Blockchain)]
     P1[Prescription ID]
     P2[patientHash (no raw PII)]
     P3[expiresAt]
@@ -145,7 +145,7 @@ flowchart TB
     P5[doctor address]
   end
 
-  subgraph OffChain[Off-chain (Database / App Storage)]
+  subgraph OffChain [Off-chain (Database / App Storage)]
     O1[Patient name, age, address]
     O2[Full prescription details (private)]
     O3[UI history & fast search]
@@ -356,7 +356,7 @@ BlockMed-এর smart contract এ role-based access থাকে (RBAC).
 
 ```mermaid
 flowchart TB
-  subgraph Roles[Roles (Wallet Address Based)]
+  subgraph Roles [Roles (Wallet Address Based)]
     Admin[Admin]
     Doctor[Doctor]
     Pharmacist[Pharmacist]
@@ -365,7 +365,7 @@ flowchart TB
     Regulator[Regulator]
   end
 
-  subgraph Actions[Key actions]
+  subgraph Actions [Key actions]
     A1[Verify users]
     A2[Create / Update / Revoke prescription]
     A3[Dispense prescription]
@@ -397,14 +397,14 @@ flowchart TB
 flowchart LR
   U[Users: Doctor / Pharmacy / Admin] --> UI[BlockMed Web UI]
 
-  UI -->|Write TX| SC[Smart Contract\n(On-chain ledger)]
+  UI -->|Write TX| SC[Smart Contract<br/>(On-chain ledger)]
   UI -->|Read calls| SC
 
-  SC -->|Events| IDX[Indexer (optional)\nListens + builds history]
+  SC -->|Events| IDX[Indexer (optional)<br/>Listens + builds history]
   IDX --> DB[(SQLite / DB)]
   UI -->|Query history fast| IDX
 
-  note1((On-chain = truth\nOff-chain = speed)) --- SC
+  note1((On-chain = truth<br/>Off-chain = speed)) --- SC
   note1 --- DB
 ```
 
@@ -467,11 +467,11 @@ BlockMed **blockchain-কে শুধু "proof খাতা" হিসেব�
 
 ```mermaid
 flowchart TB
-  subgraph Project[BlockMed Project]
+  subgraph Project [BlockMed Project]
     UI[Web UI - Doctor / Pharmacy]
   end
 
-  subgraph Chain[Blockchain - Digital Khata]
+  subgraph Chain [Blockchain - Digital Khata]
     SC[Smart Contract - Prescription IDs, status, who dispensed]
   end
 
