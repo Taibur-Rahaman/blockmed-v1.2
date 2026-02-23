@@ -127,10 +127,10 @@ See **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** and **[DEPLOYMENT_GUIDE.md](.
 ## 🚀 Deploy to Vercel
 
 1. Push to GitHub (e.g. `main`).
-2. Import repo in Vercel; set env: `VITE_CONTRACT_ADDRESS` = your deployed contract address.
-3. Build: Vite; output: `dist`.
+2. In Vercel: **Add New** → **Project** → import your BlockMed repo. Deploy (no env vars needed for the shared link to show “Connect wallet”).
+3. Optional (real blockchain): Deploy contract to Sepolia, then in Vercel **Settings** → **Environment Variables** add `VITE_CONTRACT_ADDRESS` and `VITE_DEV_RPC_URL=https://rpc.sepolia.org`, then redeploy.
 
-See **[VERCEL.md](./VERCEL.md)** for details.
+**Step-by-step:** **[docs/VERCEL_SETUP.md](./docs/VERCEL_SETUP.md)** | **Details:** **[docs/VERCEL.md](./docs/VERCEL.md)**
 
 ---
 

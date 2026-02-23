@@ -5,7 +5,7 @@ import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { FiGlobe, FiShield, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { DEFAULT_NETWORK, PUBLIC_NETWORK, IS_PUBLIC_DEPLOYMENT, CONTRACT_ADDRESS, ROLES } from '../utils/config'
+import { DEFAULT_NETWORK, PUBLIC_NETWORK, isPublicDeployment, CONTRACT_ADDRESS, ROLES } from '../utils/config'
 import contractABI from '../utils/contractABI.json'
 import { 
   DEV_ACCOUNTS, 
@@ -114,7 +114,7 @@ const LoginPage = () => {
         setNetwork('Hardhat Local (Dev Mode)', '0x7a69')
       } else if (window.ethereum) {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-        const networkName = IS_PUBLIC_DEPLOYMENT ? PUBLIC_NETWORK.chainName : DEFAULT_NETWORK.chainName
+        const networkName = isPublicDeployment() ? PUBLIC_NETWORK.chainName : DEFAULT_NETWORK.chainName
         setNetwork(networkName, chainId)
       }
       
@@ -209,7 +209,7 @@ const LoginPage = () => {
   }
 
   const switchNetwork = async () => {
-    const targetNetwork = IS_PUBLIC_DEPLOYMENT ? PUBLIC_NETWORK : DEFAULT_NETWORK
+    const targetNetwork = isPublicDeployment() ? PUBLIC_NETWORK : DEFAULT_NETWORK
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
@@ -510,8 +510,8 @@ const LoginPage = () => {
                   </h3>
                 </div>
 
-                {/* Public deployment (Vercel): no Hardhat; show Connect Wallet only */}
-                {IS_PUBLIC_DEPLOYMENT ? (
+                {/* Public deployment (Vercel / non-localhost): show Connect Wallet only, no "Hardhat Not Running" */}
+                {isPublicDeployment() ? (
                   <>
                     <div style={{
                       marginBottom: '16px',

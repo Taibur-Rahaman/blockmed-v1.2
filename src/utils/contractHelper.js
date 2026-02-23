@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { CONTRACT_ADDRESS, DEV_RPC_URL, IS_PUBLIC_DEPLOYMENT } from './config'
+import { CONTRACT_ADDRESS, DEV_RPC_URL, isPublicDeployment } from './config'
 import contractABI from './contractABI.json'
 import { isDevMode, getDevProvider, getDevSigner, testHardhatConnection } from './devMode'
 
@@ -164,7 +164,7 @@ export async function isBlockchainReady() {
   try {
     // Dev Mode: require Hardhat (only when not public deployment)
     if (isDevMode()) {
-      if (IS_PUBLIC_DEPLOYMENT) {
+      if (isPublicDeployment()) {
         // Public deployment: Dev Mode not used; treat as no signer
         const { disableDevMode } = await import('./devMode')
         disableDevMode()
@@ -176,7 +176,7 @@ export async function isBlockchainReady() {
       }
     }
     // Public deployment (Vercel): require wallet; no Hardhat
-    if (IS_PUBLIC_DEPLOYMENT && !isDevMode()) {
+    if (isPublicDeployment() && !isDevMode()) {
       if (!window?.ethereum) {
         return { ready: false, error: 'Connect MetaMask to use the app on this network.' }
       }

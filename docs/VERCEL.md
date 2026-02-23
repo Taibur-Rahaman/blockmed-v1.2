@@ -1,11 +1,14 @@
 # Vercel Deployment Guide
 
-## Why others see "Hardhat Not Running"
+**Quick setup:** See **[VERCEL_SETUP.md](./VERCEL_SETUP.md)** for a step-by-step checklist.
+
+## Why others used to see "Hardhat Not Running"
 
 Vercel hosts **only the frontend** (React app). It cannot run a blockchain node.
 
-- **Hardhat node** runs only on your computer (`npm run blockchain`). When someone opens your Vercel link, their browser tries to connect to a blockchain—by default that is **Hardhat Local** (`http://127.0.0.1:8545`). That URL points to *their* machine (or nothing), so the app shows **"Hardhat Not Running"**.
-- So you **cannot run "all" (frontend + blockchain) on Vercel**. You run the **frontend** on Vercel and the **blockchain** on a **public network** (e.g. Sepolia testnet).
+- **Hardhat node** runs only on your computer (`npm run blockchain`). When someone opens your Vercel link, their browser would try to connect to **Hardhat Local** (`http://127.0.0.1:8545`), which doesn’t exist on their machine.
+- The app now **auto-detects** when it’s not on localhost (e.g. `*.vercel.app`). In that case it shows **"Connect your wallet"** instead of "Hardhat Not Running", with **no env vars required**.
+- You **cannot run the blockchain on Vercel**. For real on-chain data, deploy the contract to a **public network** (e.g. Sepolia) and set the env vars in Vercel (see VERCEL_SETUP.md).
 
 ---
 
@@ -30,9 +33,9 @@ In **Vercel** → your project → **Settings** → **Environment Variables**, a
 
 | Variable | Value | Required |
 |----------|--------|----------|
-| `VITE_PUBLIC_DEPLOYMENT` | `true` | Yes – turns off "Hardhat required" and shows "Connect MetaMask" |
-| `VITE_CONTRACT_ADDRESS` | Your Sepolia contract address (e.g. `0x...`) | Yes |
-| `VITE_DEV_RPC_URL` | `https://rpc.sepolia.org` (or another Sepolia RPC) | Yes – for read-only when no wallet |
+| `VITE_CONTRACT_ADDRESS` | Your Sepolia contract address (e.g. `0x...`) | Yes, for on-chain data |
+| `VITE_DEV_RPC_URL` | `https://rpc.sepolia.org` (or another Sepolia RPC) | Yes, for read-only when no wallet |
+| `VITE_PUBLIC_DEPLOYMENT` | `true` | Optional – app already auto-detects Vercel (non-localhost) |
 | `VITE_PUBLIC_NETWORK` | `sepolia` | Optional – default is Sepolia |
 
 ### Step 3: Redeploy

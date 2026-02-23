@@ -10,9 +10,18 @@ export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '0x5FbD
 // For Vercel/public: set to a public RPC e.g. https://rpc.sepolia.org
 export const DEV_RPC_URL = import.meta.env.VITE_DEV_RPC_URL || 'http://127.0.0.1:8545'
 
-// Public deployment (e.g. Vercel): no local Hardhat; users connect with MetaMask to testnet
-// Set VITE_PUBLIC_DEPLOYMENT=true in Vercel so the app does not require "Hardhat running"
-export const IS_PUBLIC_DEPLOYMENT = import.meta.env.VITE_PUBLIC_DEPLOYMENT === 'true'
+// Public deployment (e.g. Vercel): no local Hardhat; users connect with MetaMask to testnet.
+// True if: env VITE_PUBLIC_DEPLOYMENT=true OR app is not on localhost (e.g. *.vercel.app).
+// So when you share your Vercel link, others see "Connect MetaMask" instead of "Hardhat Not Running".
+export function isPublicDeployment() {
+  if (import.meta.env.VITE_PUBLIC_DEPLOYMENT === 'true') return true
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const h = window.location.hostname
+    if (h === 'localhost' || h === '127.0.0.1') return false
+    return true
+  }
+  return false
+}
 
 // Supported Networks
 export const NETWORKS = {
