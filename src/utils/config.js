@@ -5,6 +5,15 @@
 // Contract address - Can be set via environment variable or defaults to local
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 
+// Dev/remote blockchain RPC (so this PC can connect to another PC's node)
+// Example: VITE_DEV_RPC_URL=http://192.168.1.100:8545
+// For Vercel/public: set to a public RPC e.g. https://rpc.sepolia.org
+export const DEV_RPC_URL = import.meta.env.VITE_DEV_RPC_URL || 'http://127.0.0.1:8545'
+
+// Public deployment (e.g. Vercel): no local Hardhat; users connect with MetaMask to testnet
+// Set VITE_PUBLIC_DEPLOYMENT=true in Vercel so the app does not require "Hardhat running"
+export const IS_PUBLIC_DEPLOYMENT = import.meta.env.VITE_PUBLIC_DEPLOYMENT === 'true'
+
 // Supported Networks
 export const NETWORKS = {
   ganache: {
@@ -43,7 +52,7 @@ export const NETWORKS = {
   sepolia: {
     chainId: '0xaa36a7', // 11155111 in hex
     chainName: 'Sepolia Testnet',
-    rpcUrls: ['https://sepolia.infura.io/v3/'],
+    rpcUrls: ['https://rpc.sepolia.org', 'https://sepolia.infura.io/v3/'],
     nativeCurrency: {
       name: 'ETH',
       symbol: 'ETH',
@@ -53,8 +62,11 @@ export const NETWORKS = {
   },
 }
 
-// Default network
+// Default network (local: Hardhat; public/Vercel: use getDeploymentNetwork())
 export const DEFAULT_NETWORK = NETWORKS.hardhat
+
+// Network to use when IS_PUBLIC_DEPLOYMENT (wallet switch + label). Default Sepolia.
+export const PUBLIC_NETWORK = NETWORKS[(import.meta.env.VITE_PUBLIC_NETWORK || 'sepolia').toLowerCase()] || NETWORKS.sepolia
 
 // Role IDs (matching smart contract enum)
 export const ROLES = {

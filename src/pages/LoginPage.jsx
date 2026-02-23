@@ -5,7 +5,7 @@ import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { FiGlobe, FiShield, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { DEFAULT_NETWORK, CONTRACT_ADDRESS, ROLES } from '../utils/config'
+import { DEFAULT_NETWORK, PUBLIC_NETWORK, IS_PUBLIC_DEPLOYMENT, CONTRACT_ADDRESS, ROLES } from '../utils/config'
 import contractABI from '../utils/contractABI.json'
 import { 
   DEV_ACCOUNTS, 
@@ -114,7 +114,8 @@ const LoginPage = () => {
         setNetwork('Hardhat Local (Dev Mode)', '0x7a69')
       } else if (window.ethereum) {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-        setNetwork(DEFAULT_NETWORK.chainName, chainId)
+        const networkName = IS_PUBLIC_DEPLOYMENT ? PUBLIC_NETWORK.chainName : DEFAULT_NETWORK.chainName
+        setNetwork(networkName, chainId)
       }
       
       // Get user info from contract
@@ -208,17 +209,18 @@ const LoginPage = () => {
   }
 
   const switchNetwork = async () => {
+    const targetNetwork = IS_PUBLIC_DEPLOYMENT ? PUBLIC_NETWORK : DEFAULT_NETWORK
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: DEFAULT_NETWORK.chainId }],
+        params: [{ chainId: targetNetwork.chainId }],
       })
     } catch (switchError) {
       if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
-            params: [DEFAULT_NETWORK],
+            params: [targetNetwork],
           })
         } catch (addError) {
           console.error('Failed to add network:', addError)
@@ -508,98 +510,159 @@ const LoginPage = () => {
                   </h3>
                 </div>
 
-                {/* Hardhat Status */}
-                <div style={{
-                  marginBottom: '16px',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  background: hardhatRunning ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  border: `1px solid ${hardhatRunning ? '#22c55e' : '#ef4444'}`,
-                  fontSize: '13px',
-                  color: hardhatRunning ? '#22c55e' : '#ef4444',
-                  textAlign: 'center'
-                }}>
-                  {hardhatRunning ? '✅ Hardhat Running - Ready!' : '❌ Hardhat Not Running'}
-                  {!hardhatRunning && (
-                    <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
-                      In a terminal: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npm run blockchain</code>
-                      <br />Then: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npm run deploy</code> and refresh.
+                {/* Public deployment (Vercel): no Hardhat; show Connect Wallet only */}
+                {IS_PUBLIC_DEPLOYMENT ? (
+                  <>
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.4)',
+                      fontSize: '13px',
+                      color: '#93c5fd',
+                      textAlign: 'center'
+                    }}>
+                      {language === 'en' ? 'Connect your wallet to use BlockMed on this network.' : 'এই নেটওয়ার্কে BlockMed ব্যবহার করতে ওয়ালেট সংযুক্ত করুন।'}
                     </div>
-                  )}
-                </div>
+                    <button
+                      onClick={connectWallet}
+                      disabled={isConnecting || !window.ethereum}
+                      style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        background: (window.ethereum && !isConnecting)
+                          ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'
+                          : 'rgba(107, 114, 128, 0.3)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '16px',
+                        fontWeight: '700',
+                        cursor: (window.ethereum && !isConnecting) ? 'pointer' : 'not-allowed',
+                        marginBottom: '8px',
+                        boxShadow: window.ethereum ? '0 4px 20px rgba(139, 92, 246, 0.4)' : 'none'
+                      }}
+                    >
+                      {isConnecting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="loader w-5 h-5" />
+                          Connecting...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <span>🦊</span>
+                          Connect MetaMask / Wallet
+                        </span>
+                      )}
+                    </button>
+                    {!window.ethereum && (
+                      <p style={{ marginTop: '10px', color: '#9ca3af', fontSize: '12px', textAlign: 'center' }}>
+                        {language === 'en' ? 'Install MetaMask or another Web3 wallet to continue.' : 'চালিয়ে যেতে MetaMask বা অন্য Web3 ওয়ালেট ইনস্টল করুন।'}
+                      </p>
+                    )}
+                    <div className="mt-6 pt-6 border-t border-white/10 text-center">
+                      <p className="text-sm text-gray-400">
+                        {language === 'en' ? `Network: ${PUBLIC_NETWORK.chainName}` : `নেটওয়ার্ক: ${PUBLIC_NETWORK.chainName}`}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Hardhat Status (local only) */}
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: hardhatRunning ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      border: `1px solid ${hardhatRunning ? '#22c55e' : '#ef4444'}`,
+                      fontSize: '13px',
+                      color: hardhatRunning ? '#22c55e' : '#ef4444',
+                      textAlign: 'center'
+                    }}>
+                      {hardhatRunning ? '✅ Hardhat Running - Ready!' : '❌ Hardhat Not Running'}
+                      {!hardhatRunning && (
+                        <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
+                          In a terminal: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npm run blockchain</code>
+                          <br />Then: <code style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>npm run deploy</code> and refresh.
+                        </div>
+                      )}
+                    </div>
 
-                {/* Dev Mode Button - PRIMARY */}
-                <button
-                  onClick={() => setShowDevPanel(true)}
-                  disabled={isConnecting || !hardhatRunning}
-                  style={{
-                    width: '100%',
-                    padding: '16px 20px',
-                    background: hardhatRunning 
-                      ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' 
-                      : 'rgba(107, 114, 128, 0.3)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    color: '#fff',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    cursor: hardhatRunning ? 'pointer' : 'not-allowed',
-                    marginBottom: '8px',
-                    boxShadow: hardhatRunning ? '0 4px 20px rgba(139, 92, 246, 0.4)' : 'none'
-                  }}
-                >
-                  {isConnecting ? '⏳ Connecting...' : '🔧 Dev Mode (No Wallet Needed)'}
-                </button>
-                
-                <p style={{ color: '#22c55e', fontSize: '12px', marginBottom: '20px', textAlign: 'center' }}>
-                  ✨ Free transactions! Pre-funded accounts!
-                </p>
+                    {/* Dev Mode Button - PRIMARY */}
+                    <button
+                      onClick={() => setShowDevPanel(true)}
+                      disabled={isConnecting || !hardhatRunning}
+                      style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        background: hardhatRunning 
+                          ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' 
+                          : 'rgba(107, 114, 128, 0.3)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '16px',
+                        fontWeight: '700',
+                        cursor: hardhatRunning ? 'pointer' : 'not-allowed',
+                        marginBottom: '8px',
+                        boxShadow: hardhatRunning ? '0 4px 20px rgba(139, 92, 246, 0.4)' : 'none'
+                      }}
+                    >
+                      {isConnecting ? '⏳ Connecting...' : '🔧 Dev Mode (No Wallet Needed)'}
+                    </button>
+                    
+                    <p style={{ color: '#22c55e', fontSize: '12px', marginBottom: '20px', textAlign: 'center' }}>
+                      ✨ Free transactions! Pre-funded accounts!
+                    </p>
 
-                {/* Divider */}
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  margin: '20px 0',
-                  color: '#6b7280',
-                  fontSize: '12px'
-                }}>
-                  <div style={{ flex: 1, height: '1px', background: '#374151' }} />
-                  <span style={{ padding: '0 12px' }}>or use wallet</span>
-                  <div style={{ flex: 1, height: '1px', background: '#374151' }} />
-                </div>
+                    {/* Divider */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      margin: '20px 0',
+                      color: '#6b7280',
+                      fontSize: '12px'
+                    }}>
+                      <div style={{ flex: 1, height: '1px', background: '#374151' }} />
+                      <span style={{ padding: '0 12px' }}>or use wallet</span>
+                      <div style={{ flex: 1, height: '1px', background: '#374151' }} />
+                    </div>
 
-                {/* Wallet Connect Button */}
-                <button
-                  onClick={connectWallet}
-                  disabled={isConnecting}
-                  className="btn-secondary w-full"
-                >
-                  {isConnecting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="loader w-5 h-5" />
-                      Connecting...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <span>🦊</span>
-                      Connect MetaMask/Frame
-                    </span>
-                  )}
-                </button>
+                    {/* Wallet Connect Button */}
+                    <button
+                      onClick={connectWallet}
+                      disabled={isConnecting}
+                      className="btn-secondary w-full"
+                    >
+                      {isConnecting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="loader w-5 h-5" />
+                          Connecting...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <span>🦊</span>
+                          Connect MetaMask/Frame
+                        </span>
+                      )}
+                    </button>
 
-                {!window.ethereum && (
-                  <p style={{ marginTop: '10px', color: '#6b7280', fontSize: '11px', textAlign: 'center' }}>
-                    No wallet? Use Dev Mode above!
-                  </p>
+                    {!window.ethereum && (
+                      <p style={{ marginTop: '10px', color: '#6b7280', fontSize: '11px', textAlign: 'center' }}>
+                        No wallet? Use Dev Mode above!
+                      </p>
+                    )}
+
+                    <div className="mt-6 pt-6 border-t border-white/10 text-center">
+                      <p className="text-sm text-gray-400">
+                        {language === 'en'
+                          ? 'Network: Hardhat Local (Free)'
+                          : 'নেটওয়ার্ক: Hardhat Local (বিনামূল্যে)'}
+                      </p>
+                    </div>
+                  </>
                 )}
-
-                <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                  <p className="text-sm text-gray-400">
-                    {language === 'en'
-                      ? 'Network: Hardhat Local (Free)'
-                      : 'নেটওয়ার্ক: Hardhat Local (বিনামূল্যে)'}
-                  </p>
-                </div>
               </>
             ) : (
               <>

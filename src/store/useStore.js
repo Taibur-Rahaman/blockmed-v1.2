@@ -71,7 +71,7 @@ export const useStore = create(
       setNetwork: (network, chainId) => set({ 
         network, 
         chainId,
-        isCorrectNetwork: chainId === '0x7a69' || chainId === '0x13881' // Hardhat or Polygon Mumbai
+        isCorrectNetwork: chainId === '0x7a69' || chainId === '0x13881' || chainId === '0xaa36a7' // Hardhat, Polygon Mumbai, Sepolia
       }),
       setOnlineStatus: (isOnline) => set({ isOnline }),
 

@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import { DEV_RPC_URL } from './config'
 
 // ============================================
 // BlockMed Dev Mode - NO WALLET NEEDED!
@@ -109,14 +110,14 @@ export async function enableDevMode(accountIndex = 0) {
     
     while (retries > 0) {
       try {
-        provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545')
+        provider = new ethers.JsonRpcProvider(DEV_RPC_URL)
         // Test connection
         await provider.getBlockNumber()
         break
       } catch (error) {
         retries--
         if (retries === 0) {
-          throw new Error('Cannot connect to Hardhat node. Make sure it is running on http://127.0.0.1:8545')
+          throw new Error(`Cannot connect to blockchain node. Make sure it is running at ${DEV_RPC_URL}`)
         }
         // Wait a bit before retry
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -205,11 +206,10 @@ export function getDevProvider() {
   }
   
   if (!devProvider) {
-    // Create on demand if needed
     try {
-      devProvider = new ethers.JsonRpcProvider('http://127.0.0.1:8545')
+      devProvider = new ethers.JsonRpcProvider(DEV_RPC_URL)
     } catch (error) {
-      throw new Error('Cannot create provider. Is Hardhat running?')
+      throw new Error(`Cannot create provider. Is node running at ${DEV_RPC_URL}?`)
     }
   }
   return devProvider
@@ -263,7 +263,7 @@ export async function getSmartSigner() {
  */
 export async function testHardhatConnection() {
   try {
-    const response = await fetch('http://127.0.0.1:8545', {
+    const response = await fetch(DEV_RPC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

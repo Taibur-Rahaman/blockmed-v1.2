@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { CONTRACT_ADDRESS } from './config'
+import { CONTRACT_ADDRESS, DEV_RPC_URL, IS_PUBLIC_DEPLOYMENT } from './config'
 import contractABI from './contractABI.json'
 import { isDevMode, getDevProvider, getDevSigner, testHardhatConnection } from './devMode'
 
@@ -31,9 +31,9 @@ export async function getProvider() {
     return window.__sharedBrowserProvider
   }
   
-  // Fallback - direct RPC (read-only)
-  console.log('📡 Using fallback RPC provider')
-  return new ethers.JsonRpcProvider('http://127.0.0.1:8545')
+  // Fallback - direct RPC (read-only), uses same URL as dev mode for multi-PC setup
+  console.log('📡 Using fallback RPC provider:', DEV_RPC_URL)
+  return new ethers.JsonRpcProvider(DEV_RPC_URL)
 }
 
 /**
@@ -157,16 +157,28 @@ export async function getCurrentAccount() {
 
 /**
  * Check if blockchain is ready (works for both Dev Mode and Wallet Mode).
- * Dev Mode: requires Hardhat running.
+ * Dev Mode: requires Hardhat running (skipped when IS_PUBLIC_DEPLOYMENT).
  * Wallet Mode: requires wallet connected and contract deployed on current chain.
  */
 export async function isBlockchainReady() {
   try {
-    // Dev Mode: require Hardhat
+    // Dev Mode: require Hardhat (only when not public deployment)
     if (isDevMode()) {
-      const hardhatOk = await testHardhatConnection()
-      if (!hardhatOk) {
-        return { ready: false, error: 'Hardhat not running. Run: npm run blockchain' }
+      if (IS_PUBLIC_DEPLOYMENT) {
+        // Public deployment: Dev Mode not used; treat as no signer
+        const { disableDevMode } = await import('./devMode')
+        disableDevMode()
+      } else {
+        const hardhatOk = await testHardhatConnection()
+        if (!hardhatOk) {
+          return { ready: false, error: 'Hardhat not running. Run: npm run blockchain' }
+        }
+      }
+    }
+    // Public deployment (Vercel): require wallet; no Hardhat
+    if (IS_PUBLIC_DEPLOYMENT && !isDevMode()) {
+      if (!window?.ethereum) {
+        return { ready: false, error: 'Connect MetaMask to use the app on this network.' }
       }
     } else if (!window?.ethereum) {
       return { ready: false, error: 'No wallet. Connect MetaMask or enable Dev Mode.' }

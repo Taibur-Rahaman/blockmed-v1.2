@@ -8,11 +8,13 @@ import {
   FiArrowRight, FiPlus, FiClock
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { formatNumber, formatTimestamp, getRoleName } from '../utils/helpers'
+import { formatNumber, formatTimestamp, getRoleName, shortenAddress } from '../utils/helpers'
 import { getReadContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
+import { DEV_RPC_URL } from '../utils/config'
 import { BlockchainBadge } from '../components/BlockchainInfo'
 import TransactionFeed from '../components/TransactionFeed'
+import BatchTimeline from '../components/BatchTimeline'
 import toast from 'react-hot-toast'
 
 const Dashboard = () => {
@@ -28,6 +30,7 @@ const Dashboard = () => {
     recalledCount: 0,
   })
   const [recentPrescriptions, setRecentPrescriptions] = useState([])
+  const [allPrescriptions, setAllPrescriptions] = useState([]) // Admin: all prescriptions from network
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -71,6 +74,29 @@ const Dashboard = () => {
           })
         }
         setRecentPrescriptions(recent)
+      }
+
+      // Admin/Regulator: fetch ALL prescriptions from network (so you see data from other PCs)
+      if (role === 1 || role === 6) {
+        const count = Number(systemStats[1]) // totalPrescriptions
+        const list = []
+        const start = Math.max(1, count - 19)
+        for (let id = count; id >= start && id >= 1; id--) {
+          try {
+            const p = await contract.getPrescription(id)
+            list.push({
+              id: Number(p.id),
+              patientHash: p.patientHash,
+              doctor: p.doctor,
+              createdAt: Number(p.createdAt),
+              isDispensed: p.isDispensed,
+              version: Number(p.version),
+            })
+          } catch (e) {
+            console.warn('Prescription', id, e?.message)
+          }
+        }
+        setAllPrescriptions(list)
       }
 
       // Get alerts (flagged and recalled batches)
@@ -273,7 +299,68 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
+      {/* Admin/Regulator: Network info - so you know which blockchain you're viewing */}
+      {(role === 1 || role === 6) && (
+        <motion.div variants={itemVariants} className="card bg-slate-800/50 border border-slate-600/50">
+          <h3 className="text-sm font-semibold text-slate-300 mb-2">Network (data source)</h3>
+          <p className="text-xs text-slate-400 font-mono break-all">{DEV_RPC_URL}</p>
+          <p className="text-xs text-slate-500 mt-2">
+            To see prescriptions and batches created on other PCs, run the blockchain on one PC and point this app to it: set <code className="bg-slate-700 px-1 rounded">VITE_DEV_RPC_URL=http://OTHER_PC_IP:8545</code> and <code className="bg-slate-700 px-1 rounded">VITE_CONTRACT_ADDRESS</code> (same as deploy) in <code className="bg-slate-700 px-1 rounded">.env</code>, then restart.
+          </p>
+        </motion.div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6">
+        {/* Admin: All prescriptions from network (from any PC) */}
+        {(role === 1 || role === 6) && (
+          <motion.div variants={itemVariants} className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                All prescriptions (network)
+              </h2>
+              <Link to="/pharmacy" className="text-primary-400 text-sm hover:underline">
+                Verify at Pharmacy
+              </Link>
+            </div>
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="skeleton h-14 rounded-lg" />
+                ))}
+              </div>
+            ) : allPrescriptions.length === 0 ? (
+              <div className="text-center py-6 text-gray-400">
+                <FiFileText size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No prescriptions on this network yet.</p>
+                <p className="text-xs mt-1">Connect to the same RPC as other PCs to see their data.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {allPrescriptions.map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-primary-500/20 flex items-center justify-center flex-shrink-0">
+                        <FiFileText className="text-primary-400" size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-white">#{p.id}</p>
+                        <p className="text-xs text-gray-500 truncate font-mono">{shortenAddress(p.doctor, 4)}</p>
+                        <p className="text-xs text-gray-400">{formatTimestamp(p.createdAt)}</p>
+                      </div>
+                    </div>
+                    <span className={`badge flex-shrink-0 ${p.isDispensed ? 'badge-success' : 'badge-warning'}`}>
+                      {p.isDispensed ? 'Dispensed' : 'Pending'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* Recent Prescriptions */}
         {role === 2 && (
           <motion.div variants={itemVariants} className="card">
@@ -421,6 +508,11 @@ const Dashboard = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Batch Journey Timeline */}
+      <motion.div variants={itemVariants}>
+        <BatchTimeline batchNumber={null} compact={false} />
+      </motion.div>
 
       {/* Live Transaction Feed - Shows real-time blockchain events */}
       <motion.div variants={itemVariants}>
