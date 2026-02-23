@@ -1,6 +1,6 @@
 # 🧠 BlockMed – Last week Work & How the Blockchain Flows (BN+EN)
 
-## 1. What You Built in the Last 5 Days
+## 1. What You Built in the Last 7 Days
 
 This document explains, **part by part**, what you built in the last few days and how it connects to the **BlockMed blockchain flow**.  
 Language style: **Bangla + English mixed**, optimized for **students + teachers + devs**.
