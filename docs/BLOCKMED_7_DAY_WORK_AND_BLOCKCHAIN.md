@@ -537,7 +537,7 @@ This file is written so you can:
 
 | Item | Value |
 |------|--------|
-| **File** | `docs/BLOCKMED_5_DAY_WORK_AND_BLOCKCHAIN.md` |
+| **File** | `docs/BLOCKMED_7_DAY_WORK_AND_BLOCKCHAIN.md` |
 | **Last updated** | February 2026 |
 | **Purpose** | Part-by-part summary of recent BlockMed work + blockchain flow (BN+EN) |
 
