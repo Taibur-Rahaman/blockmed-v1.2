@@ -1,4 +1,4 @@
-# 🧠 BlockMed – Last 5 Days of Work & How the Blockchain Flows (BN+EN)
+# 🧠 BlockMed – Last week Work & How the Blockchain Flows (BN+EN)
 
 ## 1. What You Built in the Last 5 Days
 
