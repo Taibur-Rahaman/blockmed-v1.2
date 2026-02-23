@@ -18,6 +18,13 @@ export const shortenAddress = (address, chars = 4) => {
 }
 
 /**
+ * Alias for shortenAddress (older components import truncateAddress)
+ */
+export const truncateAddress = (address, chars = 4) => {
+  return shortenAddress(address, chars)
+}
+
+/**
  * Shorten a transaction hash
  */
 export const shortenHash = (hash, chars = 6) => {

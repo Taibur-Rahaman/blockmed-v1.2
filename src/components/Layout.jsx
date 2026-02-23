@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiHome, FiFileText, FiCheckCircle, FiUsers, FiPackage,
   FiBox, FiPieChart, FiSettings, FiBell, FiMenu, FiX,
-  FiLogOut, FiGlobe, FiChevronDown, FiUser, FiMoon, FiSun, FiActivity, FiLayers
+  FiLogOut, FiGlobe, FiChevronDown, FiUser, FiMoon, FiSun, FiActivity, FiLayers, FiAward
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
 import { shortenAddress, getRoleName, getRoleColorClass, hasFeatureAccess } from '../utils/helpers'
@@ -59,6 +59,7 @@ const Layout = ({ children }) => {
     { path: '/batches', icon: FiBox, label: t('nav.batches'), roles: [1, 4, 6], accessControl: 'canCreateBatch' },
     { path: '/users', icon: FiUsers, label: t('nav.users'), roles: [1], accessControl: 'canManageUsers' }, // Super Admin only
     { path: '/analytics', icon: FiPieChart, label: t('nav.analytics'), roles: [1, 6], accessControl: 'canViewAnalytics' },
+    { path: '/leaderboard', icon: FiAward, label: 'Leaderboard', roles: [1, 2, 3, 4, 5, 6], accessControl: null },
     { path: '/activity', icon: FiActivity, label: 'Activity Log', roles: [1, 2, 3, 4, 5, 6], accessControl: null },
     { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6], accessControl: null },
   ]

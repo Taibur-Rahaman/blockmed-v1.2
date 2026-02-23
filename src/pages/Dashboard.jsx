@@ -12,6 +12,7 @@ import { formatNumber, formatTimestamp, getRoleName } from '../utils/helpers'
 import { getReadContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
 import { BlockchainBadge } from '../components/BlockchainInfo'
+import TransactionFeed from '../components/TransactionFeed'
 import toast from 'react-hot-toast'
 
 const Dashboard = () => {
@@ -420,6 +421,11 @@ const Dashboard = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Live Transaction Feed - Shows real-time blockchain events */}
+      <motion.div variants={itemVariants}>
+        <TransactionFeed maxEvents={20} autoScroll={true} showHeader={true} />
+      </motion.div>
     </motion.div>
   )
 }

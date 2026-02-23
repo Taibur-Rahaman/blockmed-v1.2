@@ -25,6 +25,7 @@ import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
 import ActivityLog from './pages/ActivityLog'
 import PrescriptionTemplates from './pages/PrescriptionTemplates'
+import Leaderboard from './pages/Leaderboard'
 
 function App() {
   console.log('🎨 App component rendering...')
@@ -252,6 +253,7 @@ function App() {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/activity" element={<ActivityLog />} />
                 <Route path="/templates" element={<PrescriptionTemplates />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
