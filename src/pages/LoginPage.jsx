@@ -510,66 +510,9 @@ const LoginPage = () => {
                   </h3>
                 </div>
 
-                {/* Public deployment (Vercel / non-localhost): show Connect Wallet only, no "Hardhat Not Running" */}
-                {isPublicDeployment() ? (
-                  <>
-                    <div style={{
-                      marginBottom: '16px',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.4)',
-                      fontSize: '13px',
-                      color: '#93c5fd',
-                      textAlign: 'center'
-                    }}>
-                      {language === 'en' ? 'Connect your wallet to use BlockMed on this network.' : 'এই নেটওয়ার্কে BlockMed ব্যবহার করতে ওয়ালেট সংযুক্ত করুন।'}
-                    </div>
-                    <button
-                      onClick={connectWallet}
-                      disabled={isConnecting || !window.ethereum}
-                      style={{
-                        width: '100%',
-                        padding: '16px 20px',
-                        background: (window.ethereum && !isConnecting)
-                          ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'
-                          : 'rgba(107, 114, 128, 0.3)',
-                        border: 'none',
-                        borderRadius: '12px',
-                        color: '#fff',
-                        fontSize: '16px',
-                        fontWeight: '700',
-                        cursor: (window.ethereum && !isConnecting) ? 'pointer' : 'not-allowed',
-                        marginBottom: '8px',
-                        boxShadow: window.ethereum ? '0 4px 20px rgba(139, 92, 246, 0.4)' : 'none'
-                      }}
-                    >
-                      {isConnecting ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="loader w-5 h-5" />
-                          Connecting...
-                        </span>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          <span>🦊</span>
-                          Connect MetaMask / Wallet
-                        </span>
-                      )}
-                    </button>
-                    {!window.ethereum && (
-                      <p style={{ marginTop: '10px', color: '#9ca3af', fontSize: '12px', textAlign: 'center' }}>
-                        {language === 'en' ? 'Install MetaMask or another Web3 wallet to continue.' : 'চালিয়ে যেতে MetaMask বা অন্য Web3 ওয়ালেট ইনস্টল করুন।'}
-                      </p>
-                    )}
-                    <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                      <p className="text-sm text-gray-400">
-                        {language === 'en' ? `Network: ${PUBLIC_NETWORK.chainName}` : `নেটওয়ার্ক: ${PUBLIC_NETWORK.chainName}`}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Hardhat Status (local only) */}
+                {/* Hardhat Status + Dev Mode (visible everywhere, including Vercel) */}
+                <>
+                    {/* Hardhat Status */}
                     <div style={{
                       marginBottom: '16px',
                       padding: '10px 14px',
@@ -661,8 +604,7 @@ const LoginPage = () => {
                           : 'নেটওয়ার্ক: Hardhat Local (বিনামূল্যে)'}
                       </p>
                     </div>
-                  </>
-                )}
+                </>
               </>
             ) : (
               <>
