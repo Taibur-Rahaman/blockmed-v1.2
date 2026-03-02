@@ -5,21 +5,28 @@ import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import {
   FiSearch, FiFileText, FiCheckCircle, FiClock, FiDownload,
-  FiEye, FiX, FiPackage, FiCalendar, FiUser
+  FiEye, FiX, FiPackage, FiCalendar, FiUser, FiActivity
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
-import { getReadContract, isBlockchainReady } from '../utils/contractHelper'
+import { getReadContract, isBlockchainReady, getContractAddress } from '../utils/contractHelper'
 import { formatTimestamp, shortenAddress, isExpired, daysUntilExpiry } from '../utils/helpers'
 
 const PatientPortal = () => {
   const { t } = useTranslation()
-  const { language } = useStore()
+  const { language, demoPrescriptions, account, user, role, patientPortalPatientHash, setPatientPortalPatientHash, patientMedicineChecks } = useStore()
 
-  const [patientHash, setPatientHash] = useState('')
+  const [patientHash, setPatientHash] = useState(patientPortalPatientHash || '')
   const [prescriptions, setPrescriptions] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedPrescription, setSelectedPrescription] = useState(null)
+
+  // Keep local input in sync if store value changes (e.g. after login)
+  React.useEffect(() => {
+    if (patientPortalPatientHash && !patientHash) {
+      setPatientHash(patientPortalPatientHash)
+    }
+  }, [patientPortalPatientHash])
 
   // Search prescriptions (works with Dev Mode and Wallet)
   const searchPrescriptions = async () => {
@@ -30,7 +37,72 @@ const PatientPortal = () => {
 
     const ready = await isBlockchainReady()
     if (!ready.ready) {
-      toast.error(ready.error || 'Blockchain not connected. Connect wallet or use Dev Mode.')
+      // Fallback: demo prescriptions created when blockchain was offline
+      const hash = patientHash.trim()
+      const demos = (demoPrescriptions || []).filter(
+        (p) => String(p.patientHash || '').toLowerCase() === hash.toLowerCase()
+      )
+
+      setLoading(true)
+      setPrescriptions([])
+
+      try {
+        if (demos.length === 0) {
+          toast.error(
+            language === 'en'
+              ? 'No demo prescriptions found for this Patient ID. Connect blockchain to search on-chain.'
+              : 'এই রোগী আইডির জন্য কোনো ডেমো প্রেসক্রিপশন পাওয়া যায়নি। অন-চেইন খুঁজতে ব্লকচেইন সংযুক্ত করুন।'
+          )
+          return
+        }
+
+        const results = demos.map((demo) => {
+          const createdAtSec = demo.createdAt
+            ? Math.floor(new Date(demo.createdAt).getTime() / 1000)
+            : Math.floor(Date.now() / 1000)
+          const validityDays = demo.validityDays || 30
+          const expiresAtSec = createdAtSec + validityDays * 86400
+
+          const details = {
+            patient: demo.patient,
+            symptoms: demo.symptoms,
+            diagnosis: demo.diagnosis,
+            medicines: demo.medicines,
+            tests: demo.tests,
+            advice: demo.advice,
+            followUp: demo.followUp,
+            validityDays: demo.validityDays,
+          }
+
+          return {
+            id: demo.id,
+            patientHash: demo.patientHash,
+            ipfsHash: demo.ipfsHash,
+            details,
+            doctor: demo.doctor,
+            createdAt: createdAtSec,
+            expiresAt: expiresAtSec,
+            isDispensed: demo.isDispensed || false,
+            dispensedBy: demo.dispensedBy || '',
+            dispensedAt: demo.dispensedAt || 0,
+            version: 1,
+            isActive: true,
+            isDemo: true,
+          }
+        })
+
+        // Newest first
+        setPrescriptions(results.reverse())
+        setPatientPortalPatientHash(hash)
+
+        toast.success(
+          language === 'en'
+            ? 'Showing demo prescriptions (blockchain not connected).'
+            : 'ব্লকচেইন সংযুক্ত না থাকায় ডেমো প্রেসক্রিপশন দেখানো হচ্ছে।'
+        )
+      } finally {
+        setLoading(false)
+      }
       return
     }
 
@@ -43,7 +115,8 @@ const PatientPortal = () => {
       
       const results = []
       for (const id of prescriptionIds) {
-        const p = await contract.getPrescription(Number(id))
+        const numericId = Number(id)
+        const p = await contract.getPrescription(numericId)
         
         // Try to parse IPFS data
         let details = {}
@@ -51,6 +124,17 @@ const PatientPortal = () => {
           details = JSON.parse(p.ipfsHash)
         } catch {
           details = { ipfsHash: p.ipfsHash }
+        }
+
+        // Try to fetch on-chain validity for clearer status
+        let onchainStatus = null
+        try {
+          const validity = await contract.isPrescriptionValid(numericId)
+          const isValid = validity.isValid ?? validity[0]
+          const statusText = validity.status ?? validity[1]
+          onchainStatus = { isValid, status: statusText }
+        } catch {
+          onchainStatus = null
         }
 
         results.push({
@@ -66,10 +150,12 @@ const PatientPortal = () => {
           dispensedAt: Number(p.dispensedAt),
           version: Number(p.version),
           isActive: p.isActive,
+          onchainStatus,
         })
       }
 
       setPrescriptions(results.reverse()) // Show newest first
+      setPatientPortalPatientHash(patientHash.trim())
       
       if (results.length === 0) {
         toast.error(t('patient.noPrescriptions'))
@@ -84,6 +170,24 @@ const PatientPortal = () => {
 
   // Get status styling
   const getStatusStyle = (prescription) => {
+    if (prescription.onchainStatus && typeof prescription.onchainStatus.isValid === 'boolean') {
+      const { isValid, status } = prescription.onchainStatus
+      if (!isValid) {
+        // Map common failure statuses to colors
+        const lowered = String(status || '').toLowerCase()
+        if (lowered.includes('dispensed')) {
+          return { label: status, color: 'text-blue-400', bg: 'bg-blue-500/20' }
+        }
+        if (lowered.includes('expired')) {
+          return { label: status, color: 'text-red-400', bg: 'bg-red-500/20' }
+        }
+        if (lowered.includes('inactive')) {
+          return { label: status, color: 'text-gray-400', bg: 'bg-gray-500/20' }
+        }
+        return { label: status, color: 'text-red-400', bg: 'bg-red-500/20' }
+      }
+      return { label: status || t('prescription.valid'), color: 'text-primary-400', bg: 'bg-primary-500/20' }
+    }
     if (!prescription.isActive) {
       return { label: 'Inactive', color: 'text-gray-400', bg: 'bg-gray-500/20' }
     }
@@ -106,6 +210,43 @@ const PatientPortal = () => {
         </h1>
         <p className="text-gray-400 mt-1">{t('patient.subtitle')}</p>
       </div>
+
+      {/* My Profile (for logged-in patients) */}
+      {role === 5 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-white mb-3">
+            {language === 'en' ? 'My Profile' : 'আমার প্রোফাইল'}
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-3 rounded-xl bg-white/5">
+              <p className="text-xs text-gray-400 mb-1">
+                {language === 'en' ? 'Name' : 'নাম'}
+              </p>
+              <p className="text-white font-medium">
+                {user?.name || (language === 'en' ? 'Unknown' : 'অজানা')}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/5">
+              <p className="text-xs text-gray-400 mb-1">
+                {language === 'en' ? 'Wallet Address' : 'ওয়ালেট ঠিকানা'}
+              </p>
+              <p className="text-white font-mono text-sm">
+                {shortenAddress(account) || (language === 'en' ? 'Not connected' : 'সংযুক্ত নয়')}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/5 sm:col-span-2">
+              <p className="text-xs text-gray-400 mb-1">
+                {language === 'en'
+                  ? 'Your Patient ID (hashed, used to fetch your history)'
+                  : 'আপনার রোগী আইডি (হ্যাশ করা, ইতিহাস দেখতে ব্যবহার হয়)'}
+              </p>
+              <p className="text-white font-mono text-xs break-all">
+                {patientPortalPatientHash || (language === 'en' ? 'Not set yet — ask your doctor for your Patient ID or scan the QR on a prescription.' : 'এখনও সেট করা হয়নি — আপনার প্রেসক্রিপশনের QR থেকে বা ডাক্তার থেকে আইডি নিন।')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="card">
@@ -240,6 +381,72 @@ const PatientPortal = () => {
         </div>
       )}
 
+      {/* Simple timeline-style view of past prescriptions */}
+      {prescriptions.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <FiActivity className="text-primary-400" />
+            {language === 'en' ? 'Prescription Timeline' : 'প্রেসক্রিপশন টাইমলাইন'}
+          </h2>
+          <div className="relative pl-4 border-l border-white/10 space-y-3">
+            {prescriptions.map((p) => (
+              <div key={`timeline-${p.id}`} className="relative">
+                <div className="w-2 h-2 rounded-full bg-primary-400 absolute -left-[5px] top-2" />
+                <div className="ml-2">
+                  <p className="text-xs text-gray-400">
+                    {formatTimestamp(p.createdAt)}
+                  </p>
+                  <p className="text-sm text-white font-medium">
+                    #{p.id} • {p.details?.diagnosis || (language === 'en' ? 'Prescription' : 'প্রেসক্রিপশন')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* My medicine checks (from QR verifications) */}
+      {account && patientMedicineChecks && patientMedicineChecks.filter((c) => c.account === account).length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <FiPackage className="text-primary-400" />
+            {language === 'en' ? 'My medicine checks' : 'আমার ওষুধ যাচাই'}
+          </h2>
+          <div className="space-y-3">
+            {patientMedicineChecks
+              .filter((c) => c.account === account)
+              .map((check) => (
+                <div
+                  key={check.id}
+                  className="p-3 rounded-xl bg-white/5 flex items-center justify-between text-sm"
+                >
+                  <div>
+                    <p className="text-white font-medium">
+                      {language === 'en' ? 'Batch' : 'ব্যাচ'} #{check.batchNumber}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(check.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-xs font-semibold ${
+                      String(check.result || '').toUpperCase().includes('RECALL') ? 'text-red-400'
+                      : String(check.result || '').toUpperCase().includes('FLAG') ? 'text-yellow-400'
+                      : 'text-primary-400'
+                    }`}>
+                      {check.result}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      {check.source === 'blockchain' ? 'On-chain' : 'Demo'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Prescription Detail Modal */}
       <AnimatePresence>
         {selectedPrescription && (
@@ -277,8 +484,13 @@ const PatientPortal = () => {
                 <div className="qr-container">
                   <QRCodeSVG
                     value={JSON.stringify({
+                      type: 'prescription',
+                      version: 2,
                       prescriptionId: selectedPrescription.id,
                       patientHash: selectedPrescription.patientHash,
+                      doctor: selectedPrescription.doctor,
+                      contractAddress: getContractAddress(),
+                      isDemo: selectedPrescription.isDemo || false,
                     })}
                     size={150}
                     level="H"

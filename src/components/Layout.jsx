@@ -64,21 +64,10 @@ const Layout = ({ children }) => {
     { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6], accessControl: null },
   ]
 
-  // Filter nav items based on role and access control
-  const filteredNavItems = navItems.filter(item => {
-    // Check role
-    if (role && !item.roles.includes(role) && role !== 1) return false
-    
-    // Check access control
-    if (item.accessControl && account) {
-      return hasFeatureAccess(account, item.accessControl)
-    }
-    
-    return true
-  })
-
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative overflow-hidden">
+      {/* Futuristic animated background */}
+      <div className="bg-animated bg-grid" />
       {/* Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -110,15 +99,18 @@ const Layout = ({ children }) => {
 
             {/* Navigation */}
             <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
-              {filteredNavItems.map((item) => {
+              {navItems.map((item) => {
                 const isActive = location.pathname === item.path
-                
-                if (item.disabled) {
+                const hasRoleAccess = !role || item.roles.includes(role) || role === 1
+                const hasFeature = !item.accessControl || !account || hasFeatureAccess(account, item.accessControl)
+                const isDisabled = item.disabled || !hasRoleAccess || !hasFeature
+
+                if (isDisabled) {
                   return (
                     <div
                       key={item.path}
-                      className="nav-item opacity-50 cursor-not-allowed"
-                      title="Coming Soon"
+                      className="nav-item opacity-40 cursor-not-allowed"
+                      title={item.disabled ? 'Coming Soon' : 'No access for this account'}
                     >
                       <item.icon size={20} />
                       <span>{item.label}</span>
@@ -130,7 +122,7 @@ const Layout = ({ children }) => {
                     </div>
                   )
                 }
-                
+
                 return (
                   <Link
                     key={item.path}
@@ -205,7 +197,7 @@ const Layout = ({ children }) => {
             {/* Breadcrumb / Page Title */}
             <div>
               <h2 className="text-lg font-semibold text-white">
-                {filteredNavItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
+                {navItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
               </h2>
             </div>
           </div>

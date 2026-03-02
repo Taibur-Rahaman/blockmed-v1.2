@@ -132,6 +132,22 @@ const FILTER_OPTIONS = [
   { value: 'alert', label: 'Alerts Only' }
 ]
 
+// Single shared Interface instance for decoding logs (ethers v6)
+const EVENT_INTERFACE = new ethers.Interface([
+  'event PrescriptionCreated(uint256 indexed id, string patientHash, address indexed doctor, uint256 expiresAt, uint256 timestamp)',
+  'event PrescriptionDispensed(uint256 indexed id, address indexed pharmacist, uint256 timestamp)',
+  'event PrescriptionUpdated(uint256 indexed id, uint256 version, address indexed doctor, string reason, uint256 timestamp)',
+  'event PrescriptionRevoked(uint256 indexed id, address indexed revokedBy, string reason, uint256 timestamp)',
+  'event BatchCreated(uint256 indexed id, string batchNumber, string medicineName, address indexed manufacturer, uint256 timestamp)',
+  'event BatchDispensed(uint256 indexed batchId, string batchNumber, uint256 quantity, uint256 remainingUnits, address indexed dispensedBy, uint256 timestamp)',
+  'event BatchRecalled(uint256 indexed id, string batchNumber, string reason, address indexed recalledBy, uint256 timestamp)',
+  'event BatchFlagged(uint256 indexed id, string batchNumber, string reason, address indexed flaggedBy, uint256 timestamp)',
+  'event FakeMedicineAlert(uint256 indexed batchId, string batchNumber, string alertType, address indexed reportedBy, uint256 timestamp)',
+  'event UserRegistered(address indexed user, uint8 role, string name, uint256 timestamp)',
+  'event UserVerified(address indexed user, address indexed verifiedBy, uint256 timestamp)',
+  'event UserDeactivated(address indexed user, address indexed deactivatedBy, uint256 timestamp)'
+])
+
 const TransactionFeed = ({ maxEvents = 50, autoScroll = true, showHeader = true }) => {
   const { t } = useTranslation()
   const [events, setEvents] = useState([])
@@ -201,26 +217,15 @@ const TransactionFeed = ({ maxEvents = 50, autoScroll = true, showHeader = true 
         
         if (logs.length > 0) {
           // Parse event logs
-          const parsedEvents = logs.map((log, index) => {
+          const parsedEvents = logs.map((log) => {
             try {
-              // Try to decode the event
-              const iface = new ethers.utils.Interface([
-                "event PrescriptionCreated(uint256 indexed id, string patientHash, address indexed doctor, uint256 expiresAt, uint256 timestamp)",
-                "event PrescriptionDispensed(uint256 indexed id, address indexed pharmacist, uint256 timestamp)",
-                "event PrescriptionUpdated(uint256 indexed id, uint256 version, address indexed doctor, string reason, uint256 timestamp)",
-                "event PrescriptionRevoked(uint256 indexed id, address indexed revokedBy, string reason, uint256 timestamp)",
-                "event BatchCreated(uint256 indexed id, string batchNumber, string medicineName, address indexed manufacturer, uint256 timestamp)",
-                "event BatchDispensed(uint256 indexed batchId, string batchNumber, uint256 quantity, uint256 remainingUnits, address indexed dispensedBy, uint256 timestamp)",
-                "event BatchRecalled(uint256 indexed id, string batchNumber, string reason, address indexed recalledBy, uint256 timestamp)",
-                "event BatchFlagged(uint256 indexed id, string batchNumber, string reason, address indexed flaggedBy, uint256 timestamp)",
-                "event FakeMedicineAlert(uint256 indexed batchId, string batchNumber, string alertType, address indexed reportedBy, uint256 timestamp)",
-                "event UserRegistered(address indexed user, uint8 role, string name, uint256 timestamp)",
-                "event UserVerified(address indexed user, address indexed verifiedBy, uint256 timestamp)",
-                "event UserDeactivated(address indexed user, address indexed deactivatedBy, uint256 timestamp)"
-              ])
-              
-              const parsed = iface.parseLog(log)
+              // Decode the event log using shared Interface (ethers v6)
+              const parsed = EVENT_INTERFACE.parseLog({
+                topics: log.topics,
+                data: log.data,
+              })
               const eventType = parsed.name
+              const logIndex = log.index ?? log.logIndex ?? 0
               
               // Extract relevant data based on event type
               let data = {}
@@ -254,7 +259,8 @@ const TransactionFeed = ({ maxEvents = 50, autoScroll = true, showHeader = true 
               }
               
               return {
-                id: `${blockNumber}-${index}`,
+                // Use block + log index + type as stable unique id
+                id: `${log.blockNumber}-${logIndex}-${eventType}`,
                 type: eventType,
                 blockNumber: log.blockNumber,
                 transactionHash: log.transactionHash,
@@ -269,8 +275,18 @@ const TransactionFeed = ({ maxEvents = 50, autoScroll = true, showHeader = true 
 
           if (parsedEvents.length > 0) {
             setEvents(prev => {
-              const newEvents = [...parsedEvents, ...prev]
-              return newEvents.slice(0, maxEvents)
+              // Merge new + existing, then de-duplicate by id
+              const combined = [...parsedEvents, ...prev]
+              const seen = new Set()
+              const unique = []
+              for (const ev of combined) {
+                if (!ev?.id) continue
+                if (seen.has(ev.id)) continue
+                seen.add(ev.id)
+                unique.push(ev)
+                if (unique.length >= maxEvents) break
+              }
+              return unique
             })
           }
         }

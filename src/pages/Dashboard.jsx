@@ -305,7 +305,10 @@ const Dashboard = () => {
           <h3 className="text-sm font-semibold text-slate-300 mb-2">Network (data source)</h3>
           <p className="text-xs text-slate-400 font-mono break-all">{DEV_RPC_URL}</p>
           <p className="text-xs text-slate-500 mt-2">
-            To see prescriptions and batches created on other PCs, run the blockchain on one PC and point this app to it: set <code className="bg-slate-700 px-1 rounded">VITE_DEV_RPC_URL=http://OTHER_PC_IP:8545</code> and <code className="bg-slate-700 px-1 rounded">VITE_CONTRACT_ADDRESS</code> (same as deploy) in <code className="bg-slate-700 px-1 rounded">.env</code>, then restart.
+            For most users, nothing to change here: just run <code className="bg-slate-700 px-1 rounded">npm run start</code> or <code className="bg-slate-700 px-1 rounded">npm run blockchain</code> on this PC and the app will automatically use <code className="bg-slate-700 px-1 rounded">http://127.0.0.1:8545</code>.
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            To share prescriptions and batches across multiple PCs, run the blockchain on one PC and point other PCs to it by editing their <code className="bg-slate-700 px-1 rounded">.env</code>: set <code className="bg-slate-700 px-1 rounded">VITE_DEV_RPC_URL=http://OTHER_PC_IP:8545</code> and <code className="bg-slate-700 px-1 rounded">VITE_CONTRACT_ADDRESS</code> (same as deploy), then restart the app.
           </p>
         </motion.div>
       )}

@@ -17,7 +17,7 @@ import {
   hasFeatureAccess, isUserRestricted
 } from '../utils/helpers'
 import { ROLES } from '../utils/config'
-import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage } from '../utils/contractHelper'
+import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage, getContractAddress, getProvider } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
 import { BlockchainInfo, BlockchainBadge, BlockchainLoadingSteps, BlockchainVerificationProof } from '../components/BlockchainInfo'
 
@@ -25,7 +25,7 @@ const PharmacyVerification = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { account, language, role, incrementDemoBatchesVersion, demoPrescriptions, markDemoPrescriptionDispensed } = useStore()
+  const { account, language, role, incrementDemoBatchesVersion, demoPrescriptions, markDemoPrescriptionDispensed, addMedicineCheck } = useStore()
 
   // Check access control
   useEffect(() => {
@@ -57,6 +57,9 @@ const PharmacyVerification = () => {
   const [chainReady, setChainReady] = useState(false)
   const [purchaseQuantity, setPurchaseQuantity] = useState(1)
   const [verificationStep, setVerificationStep] = useState(0)
+  const [expectedPatientHash, setExpectedPatientHash] = useState(null)
+  const [prescriptionValidity, setPrescriptionValidity] = useState(null)
+  const [qrWarning, setQrWarning] = useState(null)
 
   // Check blockchain connection
   useEffect(() => {
@@ -88,16 +91,67 @@ const PharmacyVerification = () => {
         qrbox: { width: 250, height: 250 },
       })
       scanner.render(
-        (decodedText) => {
+        async (decodedText) => {
           try {
             const data = JSON.parse(decodedText)
-            if (data.prescriptionId != null) {
+            // New QR format with explicit type + contract + chain
+            const currentContract = getContractAddress()?.toLowerCase()
+            let targetTab = 'prescription'
+            let warningMessage = null
+
+            if (data.type === 'prescription' && data.prescriptionId != null) {
               setPrescriptionId(String(data.prescriptionId).trim())
-              setActiveTab('prescription')
+              setExpectedPatientHash(data.patientHash || null)
+              targetTab = 'prescription'
+            } else if (data.type === 'batch' && (data.batchNumber || data.batchId != null)) {
+              setBatchNumber(String(data.batchNumber || data.batchId).trim())
+              targetTab = 'batch'
+            } else if (data.prescriptionId != null) {
+              // Legacy prescription QR
+              setPrescriptionId(String(data.prescriptionId).trim())
+              setExpectedPatientHash(data.patientHash || null)
+              targetTab = 'prescription'
             } else if (data.batchNumber) {
+              // Legacy batch QR
               setBatchNumber(String(data.batchNumber).trim())
-              setActiveTab('batch')
+              targetTab = 'batch'
             }
+
+            setActiveTab(targetTab)
+
+            // Warn if QR was issued for a different contract
+            if (data.contractAddress && currentContract && data.contractAddress.toLowerCase() !== currentContract) {
+              warningMessage = language === 'bn'
+                ? 'এই QR অন্য কনট্র্যাক্ট থেকে এসেছে। নেটওয়ার্ক ও কনট্র্যাক্ট ঠিক আছে কিনা যাচাই করুন।'
+                : 'This QR was issued for a different contract. Verify the contract/network before dispensing.'
+              toast.error(warningMessage, { duration: 7000 })
+            }
+
+            // Optional: warn if QR chain/network does not match current network
+            try {
+              if (data.chainId != null) {
+                const provider = await getProvider()
+                const network = await provider.getNetwork()
+                const currentChainId = network?.chainId != null ? Number(network.chainId) : null
+                const expectedChainId = Number(data.chainId)
+                if (currentChainId !== null && !Number.isNaN(expectedChainId) && currentChainId !== expectedChainId) {
+                  const chainWarning = language === 'bn'
+                    ? 'এই QR ভিন্ন ব্লকচেইন নেটওয়ার্ক থেকে এসেছে। নেটওয়ার্ক যাচাই করুন।'
+                    : 'This QR was issued for a different blockchain network. Please verify the network before dispensing.'
+                  warningMessage = warningMessage || chainWarning
+                  toast.error(chainWarning, { duration: 8000 })
+                }
+              }
+            } catch (netErr) {
+              console.error('Error checking network for QR:', netErr)
+            }
+
+            if (warningMessage) {
+              setQrWarning(warningMessage)
+            } else {
+              setQrWarning(null)
+            }
+
             scanner.clear().catch(() => {})
             setShowScanner(false)
             toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
@@ -179,6 +233,7 @@ const PharmacyVerification = () => {
     setPrescription(null)
     setPrescriptionData(null)
     setPatientHistory([])
+    setPrescriptionValidity(null)
 
     const ready = await isBlockchainReady()
 
@@ -186,7 +241,7 @@ const PharmacyVerification = () => {
     if (!ready.ready) {
       const demo = (demoPrescriptions || []).find((p) => p.id === numId)
       if (demo) {
-        setPrescription({
+        const demoPrescription = {
           id: demo.id,
           patientHash: demo.patientHash,
           ipfsHash: demo.ipfsHash,
@@ -199,7 +254,8 @@ const PharmacyVerification = () => {
           version: 1,
           isActive: true,
           isDemo: true,
-        })
+        }
+        setPrescription(demoPrescription)
         setPrescriptionData({
           patient: demo.patient,
           symptoms: demo.symptoms,
@@ -210,7 +266,25 @@ const PharmacyVerification = () => {
           followUp: demo.followUp,
           validityDays: demo.validityDays,
         })
+        // For demo prescriptions, derive validity from local fields
+        const localStatus = getPrescriptionStatus(demoPrescription)
+        setPrescriptionValidity({
+          isValid: localStatus.status === 'valid',
+          status: localStatus.label,
+        })
+
         toast.success(language === 'bn' ? 'ডেমো প্রেসক্রিপশন পাওয়া গেছে' : 'Demo prescription found')
+
+        // Cross-check scanned patient hash if available
+        if (expectedPatientHash && demo.patientHash &&
+          expectedPatientHash.toLowerCase() !== String(demo.patientHash).toLowerCase()) {
+          toast.error(
+            language === 'bn'
+              ? 'QR এর রোগীর আইডি এই প্রেসক্রিপশনের সাথে মিলছে না। এটি পরিবর্তিত হতে পারে।'
+              : 'QR patient ID does not match this prescription. Possible tampering.',
+            { duration: 8000 }
+          )
+        }
       } else {
         toast.error(language === 'bn' ? 'প্রেসক্রিপশন পাওয়া যায়নি। ডেমো প্রেসক্রিপশন তৈরি করুন অথবা ব্লকচেইন সংযুক্ত করুন।' : 'Prescription not found. Create a demo prescription first or connect blockchain.')
       }
@@ -237,6 +311,20 @@ const PharmacyVerification = () => {
       }
       
       setPrescription(prescriptionData)
+
+      // Query on-chain validity status for additional safety
+      try {
+        const validityResult = await contract.isPrescriptionValid(numId)
+        const isValid = validityResult.isValid ?? validityResult[0]
+        const statusText = validityResult.status ?? validityResult[1]
+        setPrescriptionValidity({
+          isValid,
+          status: statusText,
+        })
+      } catch (validityError) {
+        console.error('Error checking prescription validity:', validityError)
+        setPrescriptionValidity(null)
+      }
       
       // Parse prescription data from ipfsHash (contains medicines, patient info, etc.)
       try {
@@ -246,6 +334,17 @@ const PharmacyVerification = () => {
       } catch (error) {
         console.error('Error parsing prescription data:', error)
         setPrescriptionData(null)
+      }
+
+      // Cross-check scanned patient hash if available
+      if (expectedPatientHash && result.patientHash &&
+        expectedPatientHash.toLowerCase() !== String(result.patientHash).toLowerCase()) {
+        toast.error(
+          language === 'bn'
+            ? 'QR এর রোগীর আইডি এই প্রেসক্রিপশনের সাথে মিলছে না। এটি পরিবর্তিত হতে পারে।'
+            : 'QR patient ID does not match this prescription. Possible tampering.',
+          { duration: 8000 }
+        )
       }
       
       if (result.patientHash) {
@@ -352,6 +451,23 @@ const PharmacyVerification = () => {
       if (demo) {
         setBatchFromDemo(demo)
         toast.success(language === 'bn' ? 'ডেমো ব্যাচ পাওয়া গেছে' : 'Demo batch found')
+
+        // Log patient medicine check in demo mode if a patient is scanning
+        if (account) {
+          addMedicineCheck({
+            account,
+            batchNumber: demo.batchNumber,
+            result: demo.isRecalled
+              ? 'RECALLED (demo)'
+              : demo.isFlagged
+              ? 'FLAGGED (demo)'
+              : isExpired(demo.expiresAt)
+              ? 'EXPIRED (demo)'
+              : 'AUTHENTIC (demo)',
+            isDemo: true,
+            source: 'demo',
+          })
+        }
       } else {
         toast.error(ready.error || (language === 'bn' ? 'ব্লকচেইন সংযুক্ত নয়' : 'Blockchain not connected'))
       }
@@ -370,7 +486,7 @@ const PharmacyVerification = () => {
       
       if (exists) {
         const batchData = await contract.getBatchByNumber(num)
-        setBatch({
+        const fullBatch = {
           id: Number(batchData.id),
           batchNumber: batchData.batchNumber,
           medicineName: batchData.medicineName,
@@ -386,12 +502,33 @@ const PharmacyVerification = () => {
           totalUnits: Number(batchData.totalUnits ?? 0),
           dispensedUnits: Number(batchData.dispensedUnits ?? 0),
           verificationStatus: status,
-        })
+        }
+        setBatch(fullBatch)
+
+        // Log successful on-chain verification for patient history
+        if (account) {
+          addMedicineCheck({
+            account,
+            batchNumber: fullBatch.batchNumber,
+            result: status,
+            isDemo: false,
+            source: 'blockchain',
+          })
+        }
       } else {
         // Not on chain - check demo data
         const demo = findDemoBatchByNumber(num)
         if (demo) {
           setBatchFromDemo(demo)
+          if (account) {
+            addMedicineCheck({
+              account,
+              batchNumber: demo.batchNumber,
+              result: status || 'NOT_ON_CHAIN (demo)',
+              isDemo: true,
+              source: 'demo-fallback',
+            })
+          }
         } else {
           setBatch({
             notFound: true,
@@ -551,6 +688,20 @@ const PharmacyVerification = () => {
         </div>
       )}
 
+      {qrWarning && (
+        <div className="card border-amber-500/50 bg-amber-500/10 flex items-start gap-3">
+          <FiAlertTriangle className="text-amber-300 mt-1" />
+          <div>
+            <p className="text-amber-200 font-semibold">
+              {language === 'bn' ? 'QR নেটওয়ার্ক সতর্কতা' : 'QR network warning'}
+            </p>
+            <p className="text-amber-200 text-sm mt-1">
+              {qrWarning}
+            </p>
+          </div>
+        </div>
+      )}
+
       {lastTx.hash && (
         <div className="card">
           <BlockchainInfo
@@ -669,7 +820,9 @@ const PharmacyVerification = () => {
                         ? 'text-red-300'
                         : 'text-primary-300'
                     }`}>
-                      {prescription.isDispensed
+                      {prescriptionValidity?.status
+                        ? `On-chain status: ${prescriptionValidity.status}`
+                        : prescription.isDispensed
                         ? t('pharmacy.alreadyDispensed')
                         : isExpired(prescription.expiresAt)
                         ? t('pharmacy.prescriptionExpired')

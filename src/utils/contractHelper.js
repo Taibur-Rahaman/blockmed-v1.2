@@ -175,13 +175,20 @@ export async function isBlockchainReady() {
         }
       }
     }
-    // Public deployment (Vercel): require wallet; no Hardhat
-    if (isPublicDeployment() && !isDevMode()) {
-      if (!window?.ethereum) {
-        return { ready: false, error: 'Connect MetaMask to use the app on this network.' }
+    // Wallet requirement:
+    // - Dev Mode: NO wallet required (local Hardhat + pre-funded accounts)
+    // - Public deployment (Vercel): wallet REQUIRED
+    // - Local wallet mode (no Dev Mode): wallet REQUIRED
+    if (!isDevMode()) {
+      // Public deployment (Vercel): require wallet; no Hardhat
+      if (isPublicDeployment()) {
+        if (!window?.ethereum) {
+          return { ready: false, error: 'Connect MetaMask to use the app on this network.' }
+        }
+      } else if (!window?.ethereum) {
+        // Local (non-public) without Dev Mode still needs a wallet
+        return { ready: false, error: 'No wallet. Connect MetaMask or enable Dev Mode.' }
       }
-    } else if (!window?.ethereum) {
-      return { ready: false, error: 'No wallet. Connect MetaMask or enable Dev Mode.' }
     }
 
     // Account (Dev or Wallet)

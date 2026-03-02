@@ -47,6 +47,8 @@ const Leaderboard = ({ compact = false }) => {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('doctors')
   const [timeFilter, setTimeFilter] = useState('all')
+  const [isDemo, setIsDemo] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   useEffect(() => {
     fetchLeaderboard()
@@ -60,6 +62,8 @@ const Leaderboard = ({ compact = false }) => {
     if (!ready.ready) {
       // Demo data when blockchain not connected
       setLeaderboard(getDemoLeaderboard())
+      setIsDemo(true)
+      setLastUpdated(new Date().toISOString())
       setLoading(false)
       return
     }
@@ -124,11 +128,15 @@ const Leaderboard = ({ compact = false }) => {
       // Sort by points
       usersData.sort((a, b) => b.points - a.points)
       setLeaderboard(usersData.slice(0, 20))
+      setIsDemo(false)
+      setLastUpdated(new Date().toISOString())
       
     } catch (err) {
       console.error('Error fetching leaderboard:', err)
       setError(err.message)
       setLeaderboard(getDemoLeaderboard())
+      setIsDemo(true)
+      setLastUpdated(new Date().toISOString())
     } finally {
       setLoading(false)
     }
@@ -222,7 +230,7 @@ const Leaderboard = ({ compact = false }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="card p-6 bg-gradient-to-r from-primary-500/20 to-purple-500/20 border-primary-500/30">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
               <FiAward className="text-yellow-400" />
@@ -231,10 +239,31 @@ const Leaderboard = ({ compact = false }) => {
             <p className="text-gray-400 mt-1">
               Top contributors in the BlockMed network
             </p>
+            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+              {isDemo && (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+                  Demo data
+                </span>
+              )}
+              {lastUpdated && (
+                <span>
+                  Updated {new Date(lastUpdated).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold text-white">{leaderboard.length}</p>
-            <p className="text-sm text-gray-400">Active Users</p>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-3xl font-bold text-white">{leaderboard.length}</p>
+              <p className="text-sm text-gray-400">Active Users</p>
+            </div>
+            <button
+              onClick={fetchLeaderboard}
+              disabled={loading}
+              className="btn-secondary"
+            >
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </button>
           </div>
         </div>
       </div>

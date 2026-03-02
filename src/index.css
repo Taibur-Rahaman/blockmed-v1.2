@@ -370,8 +370,9 @@ body.bn {
   .bg-animated {
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: 0;
     overflow: hidden;
+    pointer-events: none;
   }
 
   .bg-animated::before {
@@ -392,6 +393,22 @@ body.bn {
       linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
     background-size: 50px 50px;
+    animation: gridScroll 40s linear infinite;
+  }
+
+  .bg-animated::after {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(56, 189, 248, 0.08) 50%,
+      transparent 100%
+    );
+    mix-blend-mode: screen;
+    opacity: 0.0;
+    animation: scan 22s linear infinite;
   }
 
   /* ============================================
@@ -583,6 +600,44 @@ body.bn {
   @keyframes slideIn {
     from { opacity: 0; transform: translateX(-20px); }
     to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes float {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(24px, -24px, 0) scale(1.05);
+    }
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes gridScroll {
+    0% {
+      background-position: 0 0, 0 0;
+    }
+    100% {
+      background-position: 0 100px, 100px 0;
+    }
+  }
+
+  @keyframes scan {
+    0% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    20% {
+      opacity: 0.12;
+    }
+    80% {
+      opacity: 0.12;
+    }
+    100% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
   }
 
   /* ============================================

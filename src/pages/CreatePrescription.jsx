@@ -17,7 +17,7 @@ import {
 import { useStore } from '../store/useStore'
 import { usePrescriptionStore } from '../store/useStore'
 import { GENDER_OPTIONS, VALIDITY_OPTIONS, API } from '../utils/config'
-import { getWriteContract, getCurrentAccount, isBlockchainReady, getContractAddress, getFriendlyErrorMessage } from '../utils/contractHelper'
+import { getWriteContract, getCurrentAccount, isBlockchainReady, getContractAddress, getFriendlyErrorMessage, getProvider } from '../utils/contractHelper'
 import { useBlockchain } from '../hooks/useBlockchain'
 import { 
   calculateAge, generatePatientHash, copyToClipboard, formatDate,
@@ -321,9 +321,11 @@ const CreatePrescription = () => {
 
     const dataJson = JSON.stringify(prescriptionData)
     const qrDataJson = JSON.stringify({
+      type: 'prescription-draft',
+      version: 2,
       patientHash: hash,
-      ipfsHash: dataJson.substring(0, 100) + '...',
       doctor: account,
+      // No ID yet – this QR is only for draft/preview
     })
 
     setGeneratedData({
@@ -375,10 +377,15 @@ const CreatePrescription = () => {
           patientHash,
           ipfsHash,
           qrData: JSON.stringify({
+            type: 'prescription',
+            version: 2,
             prescriptionId: demoId,
             patientHash,
             doctor: account || 'demo-doctor',
+            contractAddress: getContractAddress(),
             isDemo: true,
+            chainId: null,
+            network: 'demo-offline',
           }),
           prescriptionId: demoId,
           txHash: `demo-${demoId}`,
@@ -408,26 +415,81 @@ const CreatePrescription = () => {
       const contract = await getWriteContract()
 
       toast.loading('Submitting to blockchain...')
-      
-      // Use legacy addPrescription function (auto-registers user as doctor)
-      const tx = await contract.addPrescription(
-        patientHash,
-        ipfsHash
-      )
+
+      let tx
+      let newId
+
+      try {
+        // Prefer new RBAC-aware createPrescription when available
+        if (typeof contract.createPrescription === 'function') {
+          tx = await contract.createPrescription(
+            patientHash,
+            ipfsHash,
+            validityDays,
+            '' // digitalSignature placeholder (can be filled with EIP-712 signature later)
+          )
+        } else {
+          // Fallback to legacy addPrescription
+          tx = await contract.addPrescription(
+            patientHash,
+            ipfsHash
+          )
+        }
+      } catch (innerError) {
+        // If createPrescription reverts due to role/verification, fall back once to addPrescription
+        const msg = innerError?.message || innerError?.reason || ''
+        const roleError =
+          msg.includes('Only verified doctor') ||
+          msg.includes('Only verified doctor can perform this action') ||
+          msg.includes('onlyDoctor') ||
+          msg.includes('permission') ||
+          msg.includes('Not authorized')
+
+        if (roleError && typeof contract.addPrescription === 'function') {
+          tx = await contract.addPrescription(
+            patientHash,
+            ipfsHash
+          )
+        } else {
+          throw innerError
+        }
+      }
 
       console.log('⏳ Transaction sent:', tx.hash)
       const receipt = await tx.wait()
       const newBlock = receipt?.blockNumber ?? null
       const count = await contract.prescriptionCount()
-      const newId = Number(count)
+      newId = Number(count)
+
+      // Resolve current network for QR metadata
+      let chainId = null
+      let networkName = null
+      try {
+        const provider = await getProvider()
+        const network = await provider.getNetwork()
+        if (network?.chainId != null) {
+          chainId = Number(network.chainId)
+        }
+        if (network?.name) {
+          networkName = network.name
+        }
+      } catch (e) {
+        console.error('Error getting network for QR metadata:', e)
+      }
 
       setGeneratedData({
         patientHash,
         ipfsHash,
         qrData: JSON.stringify({
+          type: 'prescription',
+          version: 2,
           prescriptionId: newId,
           patientHash,
           doctor: currentAccount,
+          contractAddress: getContractAddress(),
+          isDemo: false,
+          chainId,
+          network: networkName,
         }),
         prescriptionId: newId,
         txHash: tx.hash,
@@ -463,18 +525,71 @@ const CreatePrescription = () => {
       }
       const contract = await getWriteContract()
       toast.loading('Saving to blockchain...')
-      const tx = await contract.addPrescription(patientHash, ipfsHash)
+
+      let tx
+      let newId
+
+      try {
+        if (typeof contract.createPrescription === 'function') {
+          tx = await contract.createPrescription(
+            patientHash,
+            ipfsHash,
+            validityDays,
+            ''
+          )
+        } else {
+          tx = await contract.addPrescription(patientHash, ipfsHash)
+        }
+      } catch (innerError) {
+        const msg = innerError?.message || innerError?.reason || ''
+        const roleError =
+          msg.includes('Only verified doctor') ||
+          msg.includes('Only verified doctor can perform this action') ||
+          msg.includes('onlyDoctor') ||
+          msg.includes('permission') ||
+          msg.includes('Not authorized')
+
+        if (roleError && typeof contract.addPrescription === 'function') {
+          tx = await contract.addPrescription(patientHash, ipfsHash)
+        } else {
+          throw innerError
+        }
+      }
+
       const receipt = await tx.wait()
       const newBlock = receipt?.blockNumber ?? null
       const count = await contract.prescriptionCount()
-      const newId = Number(count)
+      newId = Number(count)
+
+      // Resolve current network for QR metadata
+      let chainId = null
+      let networkName = null
+      try {
+        const provider = await getProvider()
+        const network = await provider.getNetwork()
+        if (network?.chainId != null) {
+          chainId = Number(network.chainId)
+        }
+        if (network?.name) {
+          networkName = network.name
+        }
+      } catch (e) {
+        console.error('Error getting network for QR metadata:', e)
+      }
+
       setGeneratedData({
         patientHash,
         ipfsHash,
         qrData: JSON.stringify({
+          type: 'prescription',
+          version: 2,
           prescriptionId: newId,
           patientHash,
           doctor: currentAccount,
+          contractAddress: getContractAddress(),
+          isDemo: false,
+          chainId,
+          network: networkName,
         }),
         prescriptionId: newId,
         txHash: tx.hash,

@@ -11,7 +11,7 @@ import {
 
 import { useStore } from '../store/useStore'
 import { hasFeatureAccess, isUserRestricted } from '../utils/helpers'
-import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage } from '../utils/contractHelper'
+import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage, getContractAddress } from '../utils/contractHelper'
 import { DEMO_BATCHES } from '../data/demoBatches'
 import { formatTimestamp, shortenAddress, isExpired, getBatchStatus } from '../utils/helpers'
 import { useNavigate } from 'react-router-dom'
@@ -531,7 +531,14 @@ const BatchManagement = () => {
                     </span>
                   </div>
                   <QRCodeSVG
-                    value={JSON.stringify({ batchNumber: batch.batchNumber })}
+                    value={JSON.stringify({
+                      type: 'batch',
+                      version: 2,
+                      batchNumber: batch.batchNumber,
+                      batchId: batch.id,
+                      contractAddress: getContractAddress(),
+                      isDemo: usingDemoData,
+                    })}
                     size={60}
                     level="M"
                     className="rounded-lg"

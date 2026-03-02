@@ -120,6 +120,23 @@ export const useStore = create(
         lastSyncTime: new Date().toISOString()
       }),
 
+      // Patient Portal helper state (hashed patient ID the patient uses to view history)
+      patientPortalPatientHash: '',
+      setPatientPortalPatientHash: (hash) => set({ patientPortalPatientHash: hash || '' }),
+
+      // Patient medicine check history (from QR scans / verifications)
+      patientMedicineChecks: [],
+      addMedicineCheck: (check) => set((state) => ({
+        patientMedicineChecks: [
+          {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            ...check,
+          },
+          ...state.patientMedicineChecks,
+        ].slice(0, 100),
+      })),
+
       // Demo batch stock sync - when Pharmacy confirms purchase (demo), Batch Management re-renders
       demoBatchesVersion: 0,
       incrementDemoBatchesVersion: () => set((state) => ({ demoBatchesVersion: state.demoBatchesVersion + 1 })),
@@ -177,6 +194,7 @@ export const useStore = create(
         cachedBatches: state.cachedBatches,
         lastSyncTime: state.lastSyncTime,
         notifications: state.notifications,
+        // NOTE: we intentionally do NOT persist account/user/role.
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {

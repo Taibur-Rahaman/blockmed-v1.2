@@ -11,6 +11,7 @@ import { useStore } from '../store/useStore'
 import { formatTimestamp, shortenAddress, getRoleName } from '../utils/helpers'
 import { getReadContract, getProvider } from '../utils/contractHelper'
 import { BlockchainBadge } from '../components/BlockchainInfo'
+import TransactionFeed from '../components/TransactionFeed'
 import { isDevMode } from '../utils/devMode'
 import toast from 'react-hot-toast'
 
@@ -731,6 +732,9 @@ const ActivityLog = () => {
           </select>
         </div>
       </div>
+
+      {/* Live Transaction Feed (same underlying events) */}
+      <TransactionFeed maxEvents={40} autoScroll={false} showHeader={true} />
 
       {/* Activity List */}
       <div className="space-y-4">

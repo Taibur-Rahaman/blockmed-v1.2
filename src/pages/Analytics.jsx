@@ -15,13 +15,14 @@ import { useStore } from '../store/useStore'
 import { formatNumber, hasFeatureAccess, isUserRestricted } from '../utils/helpers'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { DEMO_BATCHES } from '../data/demoBatches'
 
 const COLORS = ['#22c55e', '#3b82f6', '#eab308', '#ef4444', '#8b5cf6', '#f97316']
 
 const Analytics = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { role, account } = useStore()
+  const { role, account, demoPrescriptions, demoPrescriptionsVersion, demoBatchesVersion } = useStore()
 
   // Check access control
   useEffect(() => {
@@ -47,19 +48,45 @@ const Analytics = () => {
     recalledCount: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   useEffect(() => {
     loadAnalytics()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loadAnalytics = async () => {
+  // Recompute analytics automatically when demo data changes (offline mode)
+  useEffect(() => {
+    loadAnalytics(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoPrescriptionsVersion, demoBatchesVersion])
+
+  const loadAnalytics = async (silent = false) => {
     try {
       const { getReadContract, isBlockchainReady } = await import('../utils/contractHelper')
       
       // Check if blockchain is ready
       const ready = await isBlockchainReady()
       if (!ready.ready) {
-        toast.error(ready.error || 'Blockchain not connected')
+        // Fallback to local/demo analytics when blockchain is offline
+        const totalPrescriptions = (demoPrescriptions || []).length
+        const totalBatches = DEMO_BATCHES.length
+        const dispensedCount = (demoPrescriptions || []).filter((p) => p.isDispensed).length
+        const flaggedCount = DEMO_BATCHES.filter((b) => b.isFlagged).length
+        const recalledCount = DEMO_BATCHES.filter((b) => b.isRecalled).length
+
+        setStats({
+          totalUsers: 0,
+          totalPrescriptions,
+          totalBatches,
+          dispensedCount,
+          flaggedCount,
+          recalledCount,
+        })
+        setLastUpdated(new Date().toISOString())
+        if (!silent) {
+          toast.success('Showing demo analytics (blockchain not connected).')
+        }
         setLoading(false)
         return
       }
@@ -91,6 +118,7 @@ const Analytics = () => {
           recalledCount: 0,
         })
       }
+      setLastUpdated(new Date().toISOString())
     } catch (error) {
       console.error('Error loading analytics:', error)
       toast.error(error?.message || 'Failed to load analytics. Is blockchain running?')
@@ -172,11 +200,27 @@ const Analytics = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="card">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <FiPieChart className="text-primary-400" />
-          {t('analytics.title')}
-        </h1>
-        <p className="text-gray-400 mt-1">{t('analytics.subtitle')}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+              <FiPieChart className="text-primary-400" />
+              {t('analytics.title')}
+            </h1>
+            <p className="text-gray-400 mt-1">{t('analytics.subtitle')}</p>
+            {lastUpdated && (
+              <p className="text-xs text-gray-500 mt-1">
+                Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => loadAnalytics()}
+            disabled={loading}
+            className="btn-secondary self-start"
+          >
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
