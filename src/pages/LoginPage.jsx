@@ -118,9 +118,10 @@ const LoginPage = () => {
         setNetwork(networkName, chainId)
       }
       
-      // Get user info from contract
+      // Get user info from contract when available
       const contract = await getReadContract()
-      
+      let userLoadedFromChain = false
+
       try {
         const userInfo = await contract.getUser(account)
         if (userInfo && userInfo.role !== 0n) {
@@ -133,11 +134,45 @@ const LoginPage = () => {
             isActive: userInfo.isActive,
             registeredAt: Number(userInfo.registeredAt),
           })
-        } else {
-          setShowRegister(true)
+          userLoadedFromChain = true
         }
       } catch (err) {
-        console.log('User not found, showing registration')
+        console.log('User not found on-chain:', err?.message || err)
+      }
+
+      // Dev Mode fallback: if no on-chain user, infer role from DEV_ACCOUNTS mapping
+      if (!userLoadedFromChain && isDevModeConnection) {
+        const devAccountConfig = DEV_ACCOUNTS.find(
+          (acc) => acc.address.toLowerCase() === String(account).toLowerCase()
+        )
+
+        if (devAccountConfig) {
+          const roleMap = {
+            ADMIN: ROLES.ADMIN,
+            DOCTOR: ROLES.DOCTOR,
+            PHARMACIST: ROLES.PHARMACIST,
+            MANUFACTURER: ROLES.MANUFACTURER,
+            PATIENT: ROLES.PATIENT,
+            REGULATOR: ROLES.REGULATOR,
+          }
+
+          const mappedRole = roleMap[devAccountConfig.role] || ROLES.PATIENT
+
+          setUser({
+            address: account,
+            role: mappedRole,
+            name: devAccountConfig.name,
+            licenseNumber: devAccountConfig.role,
+            isVerified: true,
+            isActive: true,
+            registeredAt: Math.floor(Date.now() / 1000),
+          })
+
+          return
+        }
+      }
+
+      if (!userLoadedFromChain) {
         setShowRegister(true)
       }
     } catch (error) {

@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import {
   FiSearch, FiFileText, FiCheckCircle, FiClock, FiDownload,
-  FiEye, FiX, FiPackage, FiCalendar, FiUser, FiActivity
+  FiEye, FiX, FiPackage, FiCalendar, FiUser, FiActivity, FiAlertTriangle
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
@@ -200,6 +200,23 @@ const PatientPortal = () => {
     return { label: t('prescription.valid'), color: 'text-primary-400', bg: 'bg-primary-500/20' }
   }
 
+  // Derive simple safety alerts for the current patient
+  const myChecks = account
+    ? (patientMedicineChecks || []).filter((c) => c.account === account)
+    : []
+
+  const recallChecks = myChecks.filter((c) =>
+    String(c.result || '').toUpperCase().includes('RECALL')
+  )
+  const flaggedChecks = myChecks.filter((c) =>
+    String(c.result || '').toUpperCase().includes('FLAG')
+  )
+
+  const expiredPrescriptions = prescriptions.filter((p) => isExpired(p.expiresAt))
+  const pendingPrescriptions = prescriptions.filter(
+    (p) => !isExpired(p.expiresAt) && !p.isDispensed
+  )
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -245,6 +262,49 @@ const PatientPortal = () => {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Patient-specific alerts (safety overview) */}
+      {(expiredPrescriptions.length > 0 ||
+        pendingPrescriptions.length > 0 ||
+        recallChecks.length > 0 ||
+        flaggedChecks.length > 0) && (
+        <div className="card border-amber-500/40 bg-amber-500/5">
+          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <FiAlertTriangle className="text-amber-400" />
+            {language === 'en' ? 'My safety alerts' : 'আমার সেফটি অ্যালার্ট'}
+          </h2>
+          <ul className="space-y-1 text-sm">
+            {expiredPrescriptions.length > 0 && (
+              <li className="text-red-300">
+                • {language === 'en'
+                  ? `${expiredPrescriptions.length} prescription(s) are expired. Ask your doctor before taking these medicines.`
+                  : `${expiredPrescriptions.length}টি প্রেসক্রিপশন মেয়াদোত্তীর্ণ হয়েছে। এই ওষুধ নেওয়ার আগে ডাক্তারের সাথে পরামর্শ করুন।`}
+              </li>
+            )}
+            {pendingPrescriptions.length > 0 && (
+              <li className="text-amber-200">
+                • {language === 'en'
+                  ? `${pendingPrescriptions.length} prescription(s) are pending (not yet dispensed).`
+                  : `${pendingPrescriptions.length}টি প্রেসক্রিপশন এখনো ডিসপেন্স হয়নি।`}
+              </li>
+            )}
+            {recallChecks.length > 0 && (
+              <li className="text-red-300">
+                • {language === 'en'
+                  ? `You verified ${recallChecks.length} medicine batch(es) that were marked as RECALLED. Do not use them and consult your doctor/pharmacy.`
+                  : `আপনি ${recallChecks.length}টি ব্যাচ যাচাই করেছেন যা RECALL হিসেবে চিহ্নিত। এগুলো ব্যবহার করবেন না এবং ডাক্তার/ফার্মাসিস্টের সাথে যোগাযোগ করুন।`}
+              </li>
+            )}
+            {flaggedChecks.length > 0 && (
+              <li className="text-yellow-200">
+                • {language === 'en'
+                  ? `You verified ${flaggedChecks.length} medicine batch(es) that were flagged as suspicious. Double-check with your pharmacy or regulator.`
+                  : `আপনি ${flaggedChecks.length}টি ব্যাচ যাচাই করেছেন যা সন্দেহজনক হিসেবে FLAG করা হয়েছে। ফার্মেসি বা কর্তৃপক্ষের সাথে আবার যাচাই করুন।`}
+              </li>
+            )}
+          </ul>
         </div>
       )}
 

@@ -10,7 +10,8 @@ import {
 } from 'react-icons/fi'
 
 import { useStore } from '../store/useStore'
-import { hasFeatureAccess, isUserRestricted } from '../utils/helpers'
+import { isUserRestricted, normalizeRoleId } from '../utils/helpers'
+import { canAccessFeature } from '../utils/permissions'
 import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage, getContractAddress } from '../utils/contractHelper'
 import { DEMO_BATCHES } from '../data/demoBatches'
 import { formatTimestamp, shortenAddress, isExpired, getBatchStatus } from '../utils/helpers'
@@ -20,7 +21,10 @@ import { BlockchainBadge, BlockchainInfo, BlockchainActivityBadge } from '../com
 const BatchManagement = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { account, role, language, demoBatchesVersion, incrementDemoBatchesVersion } = useStore()
+  const { account, role, user, language, demoBatchesVersion, incrementDemoBatchesVersion } = useStore()
+  const currentRole = normalizeRoleId(role ?? user?.role)
+  const canCreateBatch = canAccessFeature(currentRole, 'canCreateBatch')
+  const canRecallBatch = canAccessFeature(currentRole, 'canRecallBatch')
 
   // Check access control
   useEffect(() => {
@@ -30,12 +34,12 @@ const BatchManagement = () => {
         navigate('/')
         return
       }
-      if (!hasFeatureAccess(account, 'canCreateBatch')) {
+      if (!canCreateBatch) {
         toast.error('You do not have permission to create batches.')
         navigate('/')
       }
     }
-  }, [account, navigate])
+  }, [account, canCreateBatch, navigate])
 
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -289,7 +293,7 @@ const BatchManagement = () => {
                 : !usingDemoData ? t('batch.subtitle') : 'Showing demo batches. Connect wallet or enable Dev Mode to create real batches.'}
             </p>
           </div>
-          {(role === 1 || role === 4) && (
+          {canCreateBatch && (
             <button onClick={() => setShowForm(true)} className="btn-primary">
               <FiPlus size={18} />
               {t('batch.createBatch')}
@@ -496,7 +500,7 @@ const BatchManagement = () => {
                 ? (language === 'bn' ? 'প্রথম ব্যাচ তৈরি করুন। ব্লকচেইনে ওষুধ নিবন্ধন করুন।' : 'Create your first batch to register medicine on blockchain.')
                 : (language === 'bn' ? 'অন্য খুঁজুন বা ফিল্টার পরিবর্তন করুন।' : 'Try a different search or filter.')}
             </p>
-            {batches.length === 0 && (role === 1 || role === 4) && (
+            {batches.length === 0 && canCreateBatch && (
               <button onClick={() => setShowForm(true)} className="btn-primary">
                 <FiPlus size={18} />
                 {t('batch.createBatch')}
@@ -592,7 +596,7 @@ const BatchManagement = () => {
                 )}
 
                 {/* Actions */}
-                {(role === 1 || role === 4 || role === 6) && !batch.isRecalled && (
+                {canRecallBatch && !batch.isRecalled && (
                   <button
                     onClick={() => handleRecall(batch)}
                     className="btn-danger w-full mt-4 text-sm"

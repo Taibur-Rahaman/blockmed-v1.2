@@ -24,12 +24,14 @@ import {
   isUserRestricted, getUserRestriction
 } from '../utils/helpers'
 import { BlockchainInfo } from '../components/BlockchainInfo'
+import { FeatureAccess } from '../components/RoleProtectedComponent'
+import PageAccessControl from '../components/PageAccessControl'
 import staticMedicines from '../data/medicines.json'
 
 const CreatePrescription = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { account, language, logout, addDemoPrescription, demoPrescriptionsVersion } = useStore()
+  const { account, role, language, logout, addDemoPrescription, demoPrescriptionsVersion } = useStore()
   const prescriptionStore = usePrescriptionStore()
   const { connected: blockchainConnected, refresh: refreshBlockchain } = useBlockchain()
   const [usingDemoMode, setUsingDemoMode] = useState(false)
@@ -843,20 +845,25 @@ const CreatePrescription = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Progress Steps */}
-      <div className="card">
-        <div className="flex items-center justify-between overflow-x-auto pb-2">
-          {steps.map((step, index) => (
-            <div
-              key={step.number}
-              className={`flex items-center ${index < steps.length - 1 ? 'flex-1' : ''}`}
-            >
-              <button
-                onClick={() => step.number <= currentStep && setCurrentStep(step.number)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
-                  currentStep === step.number
-                    ? 'bg-primary-500 text-white'
+    <PageAccessControl requiredRoles={[1, 2]} pageTitle="Create Prescription">
+      <FeatureAccess 
+        feature="canCreatePrescription"
+        allowedRoles={[1, 2]} // Admin and Doctor only
+      >
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Progress Steps */}
+        <div className="card">
+          <div className="flex items-center justify-between overflow-x-auto pb-2">
+            {steps.map((step, index) => (
+              <div
+                key={step.number}
+                className={`flex items-center ${index < steps.length - 1 ? 'flex-1' : ''}`}
+              >
+                <button
+                  onClick={() => step.number <= currentStep && setCurrentStep(step.number)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
+                    currentStep === step.number
+                      ? 'bg-primary-500 text-white'
                     : currentStep > step.number
                     ? 'bg-primary-500/20 text-primary-400'
                     : 'bg-white/5 text-gray-400'
@@ -1649,7 +1656,9 @@ const CreatePrescription = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </FeatureAccess>
+    </PageAccessControl>
   )
 }
 

@@ -216,14 +216,16 @@ export const isValidBatchNumber = (batchNumber) => {
  * Get role name from role ID
  */
 export const getRoleName = (roleId) => {
+  const normalizedRole = normalizeRoleId(roleId)
   const roles = ['None', 'Admin', 'Doctor', 'Pharmacist', 'Manufacturer', 'Patient', 'Regulator']
-  return roles[roleId] || 'Unknown'
+  return roles[normalizedRole || 0] || 'Unknown'
 }
 
 /**
  * Get role color class
  */
 export const getRoleColorClass = (roleId) => {
+  const normalizedRole = normalizeRoleId(roleId)
   const colors = {
     0: 'text-gray-400 bg-gray-500/20',
     1: 'text-red-400 bg-red-500/20',
@@ -233,16 +235,54 @@ export const getRoleColorClass = (roleId) => {
     5: 'text-purple-400 bg-purple-500/20',
     6: 'text-orange-400 bg-orange-500/20',
   }
-  return colors[roleId] || colors[0]
+  return colors[normalizedRole || 0] || colors[0]
 }
 
 /**
  * Check if user has permission for an action
  */
 export const hasPermission = (userRole, requiredRoles) => {
-  if (!userRole) return false
-  if (userRole === 1) return true // Admin has all permissions
-  return requiredRoles.includes(userRole)
+  const normalizedRole = normalizeRoleId(userRole)
+  if (!normalizedRole) return false
+  if (normalizedRole === 1) return true // Admin has all permissions
+  return requiredRoles.includes(normalizedRole)
+}
+
+/**
+ * Import and re-export permission functions from permissions.js
+ * These are used throughout the application for role-based access control
+ */
+import {
+  normalizeRoleId,
+  canAccessPage,
+  canAccessFeature,
+  getRolePermissions,
+  canPerformAction,
+  getAccessiblePages,
+  getPermissionDenialMessage,
+  canDispenseMedicines,
+  canCreateBatches,
+  canManageBatches,
+  canAccessPatientData,
+  isAdmin,
+  isHealthcareProvider,
+} from './permissions'
+
+// Re-export permission functions for convenience
+export {
+  normalizeRoleId,
+  canAccessPage,
+  canAccessFeature,
+  getRolePermissions,
+  canPerformAction,
+  getAccessiblePages,
+  getPermissionDenialMessage,
+  canDispenseMedicines,
+  canCreateBatches,
+  canManageBatches,
+  canAccessPatientData,
+  isAdmin,
+  isHealthcareProvider,
 }
 
 // ============================================

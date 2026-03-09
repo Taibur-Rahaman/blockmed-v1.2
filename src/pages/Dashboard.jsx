@@ -8,7 +8,7 @@ import {
   FiArrowRight, FiPlus, FiClock
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { formatNumber, formatTimestamp, getRoleName, shortenAddress } from '../utils/helpers'
+import { formatNumber, formatTimestamp, getRoleName, shortenAddress, canAccessFeature, normalizeRoleId, getRolePermissions } from '../utils/helpers'
 import { getReadContract, getCurrentAccount, isBlockchainReady } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
 import { DEV_RPC_URL } from '../utils/config'
@@ -20,6 +20,8 @@ import toast from 'react-hot-toast'
 const Dashboard = () => {
   const { t } = useTranslation()
   const { account, user, role } = useStore()
+  const currentRole = normalizeRoleId(role ?? user?.role)
+  const rolePermissions = getRolePermissions(currentRole)
   
   const [stats, setStats] = useState({
     totalPrescriptions: 0,
@@ -36,7 +38,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData()
-  }, [account])
+  }, [account, currentRole])
 
   const fetchDashboardData = async () => {
     const ready = await isBlockchainReady()
@@ -60,7 +62,7 @@ const Dashboard = () => {
       })
 
       // Get recent prescriptions for doctor
-      if (role === 2) { // Doctor
+      if (currentRole === 2) { // Doctor
         const prescriptionIds = await contract.getPrescriptionsByDoctor(account)
         const recent = []
         for (let i = prescriptionIds.length - 1; i >= Math.max(0, prescriptionIds.length - 5); i--) {
@@ -77,7 +79,7 @@ const Dashboard = () => {
       }
 
       // Admin/Regulator: fetch ALL prescriptions from network (so you see data from other PCs)
-      if (role === 1 || role === 6) {
+      if (currentRole === 1 || currentRole === 6) {
         const count = Number(systemStats[1]) // totalPrescriptions
         const list = []
         const start = Math.max(1, count - 19)
@@ -130,39 +132,98 @@ const Dashboard = () => {
     }
   }
 
-  const quickActions = [
+  // Get role-specific quick actions
+  const allQuickActions = [
     { 
+      id: 'createPrescription',
       label: t('nav.createPrescription'), 
       icon: FiPlus, 
       path: '/prescription/create',
       color: 'from-primary-500 to-primary-600',
-      roles: [1, 2]
+      feature: 'canCreatePrescription'
     },
     { 
+      id: 'verification',
       label: t('nav.verification'), 
       icon: FiCheckCircle, 
       path: '/pharmacy',
       color: 'from-blue-500 to-blue-600',
-      roles: [1, 2, 3, 5]
+      feature: 'canAccessPharmacyVerification'
     },
     { 
+      id: 'batches',
       label: t('nav.batches'), 
       icon: FiBox, 
       path: '/batches',
       color: 'from-yellow-500 to-yellow-600',
-      roles: [1, 4, 6]
+      feature: 'canCreateBatch'
     },
     { 
+      id: 'analytics',
       label: t('nav.analytics'), 
       icon: FiTrendingUp, 
       path: '/analytics',
       color: 'from-accent-500 to-accent-600',
-      roles: [1, 6]
+      feature: 'canViewAnalytics'
+    },
+    {
+      id: 'templates',
+      label: 'Templates',
+      icon: FiFileText,
+      path: '/templates',
+      color: 'from-violet-500 to-violet-600',
+      feature: 'canUseTemplates'
+    },
+    {
+      id: 'patientPortal',
+      label: t('nav.patients'),
+      icon: FiUsers,
+      path: '/patient',
+      color: 'from-emerald-500 to-emerald-600',
+      feature: 'canAccessPatientPortal'
+    },
+    {
+      id: 'patientHistory',
+      label: 'Patient History',
+      icon: FiUsers,
+      path: '/patient-history',
+      color: 'from-cyan-500 to-cyan-600',
+      feature: 'canViewPatientHistory'
+    },
+    {
+      id: 'medicines',
+      label: t('nav.medicines'),
+      icon: FiPackage,
+      path: '/medicines',
+      color: 'from-sky-500 to-sky-600',
+      feature: 'canViewMedicines'
+    },
+    {
+      id: 'users',
+      label: t('nav.users'),
+      icon: FiUsers,
+      path: '/users',
+      color: 'from-rose-500 to-rose-600',
+      feature: 'canManageUsers'
+    },
+    {
+      id: 'activity',
+      label: 'Activity Log',
+      icon: FiActivity,
+      path: '/activity',
+      color: 'from-orange-500 to-orange-600',
+      feature: 'canViewActivityLog'
     },
   ]
 
+  // Filter quick actions based on role permissions
+  const quickActions = allQuickActions.filter((action) =>
+    rolePermissions.quickActions.includes(action.id) && canAccessFeature(currentRole, action.feature)
+  )
+
   const statCards = [
     { 
+      id: 'totalPrescriptions',
       label: t('dashboard.totalPrescriptions'), 
       value: stats.totalPrescriptions, 
       icon: FiFileText,
@@ -170,6 +231,7 @@ const Dashboard = () => {
       bgColor: 'bg-primary-500/20'
     },
     { 
+      id: 'dispensedCount',
       label: 'Dispensed', 
       value: stats.dispensedCount, 
       icon: FiCheckCircle,
@@ -177,6 +239,7 @@ const Dashboard = () => {
       bgColor: 'bg-blue-500/20'
     },
     { 
+      id: 'totalBatches',
       label: 'Medicine Batches', 
       value: stats.totalBatches, 
       icon: FiPackage,
@@ -184,6 +247,7 @@ const Dashboard = () => {
       bgColor: 'bg-yellow-500/20'
     },
     { 
+      id: 'activeAlerts',
       label: t('dashboard.activeAlerts'), 
       value: stats.flaggedCount + stats.recalledCount, 
       icon: FiAlertTriangle,
@@ -191,6 +255,9 @@ const Dashboard = () => {
       bgColor: 'bg-red-500/20'
     },
   ]
+
+  // Filter stat cards based on role
+  const visibleStatCards = statCards.filter((card) => rolePermissions.stats.includes(card.id))
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -225,7 +292,7 @@ const Dashboard = () => {
               )}
             </div>
             <p className="text-gray-400 mt-1">
-              {loading ? 'Loading from blockchain…' : `${getRoleName(role)} Dashboard`} • {new Date().toLocaleDateString('en-US', { 
+              {loading ? 'Loading from blockchain…' : `${getRoleName(currentRole)} Dashboard`} • {new Date().toLocaleDateString('en-US', {
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
@@ -234,7 +301,7 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            {role === 2 && (
+            {canAccessFeature(currentRole, 'canCreatePrescription') && (
               <Link to="/prescription/create" className="btn-primary">
                 <FiPlus size={18} />
                 {t('prescription.create')}
@@ -249,7 +316,7 @@ const Dashboard = () => {
         variants={itemVariants}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        {statCards.map((stat, index) => (
+        {visibleStatCards.map((stat, index) => (
           <motion.div
             key={index}
             variants={itemVariants}
@@ -279,9 +346,7 @@ const Dashboard = () => {
       <motion.div variants={itemVariants} className="card">
         <h2 className="text-lg font-semibold text-white mb-4">{t('dashboard.quickActions')}</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions
-            .filter(action => !role || action.roles.includes(role) || role === 1)
-            .map((action, index) => (
+          {quickActions.map((action, index) => (
               <Link
                 key={index}
                 to={action.path}
@@ -300,7 +365,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Admin/Regulator: Network info - so you know which blockchain you're viewing */}
-      {(role === 1 || role === 6) && (
+      {(currentRole === 1 || currentRole === 6) && (
         <motion.div variants={itemVariants} className="card bg-slate-800/50 border border-slate-600/50">
           <h3 className="text-sm font-semibold text-slate-300 mb-2">Network (data source)</h3>
           <p className="text-xs text-slate-400 font-mono break-all">{DEV_RPC_URL}</p>
@@ -315,7 +380,7 @@ const Dashboard = () => {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Admin: All prescriptions from network (from any PC) */}
-        {(role === 1 || role === 6) && (
+        {(currentRole === 1 || currentRole === 6) && (
           <motion.div variants={itemVariants} className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">
@@ -365,7 +430,7 @@ const Dashboard = () => {
         )}
 
         {/* Recent Prescriptions */}
-        {role === 2 && (
+        {currentRole === 2 && (
           <motion.div variants={itemVariants} className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">
@@ -481,7 +546,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* System Health - For Admin/Regulator */}
-        {(role === 1 || role === 6) && (
+        {(currentRole === 1 || currentRole === 6) && (
           <motion.div variants={itemVariants} className="card">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <FiActivity className="text-primary-400" />

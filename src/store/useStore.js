@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { normalizeRoleId } from '../utils/permissions'
 
 // ============================================
 // Main Application Store
@@ -12,15 +13,15 @@ export const useStore = create(
       // ============================================
       account: null,
       user: null,
-      role: null, // 'admin', 'doctor', 'pharmacist', 'manufacturer', 'patient', 'regulator'
+      role: null, // numeric role ID (1-6)
       isConnected: false,
       isVerified: false,
       
       setAccount: (account) => set({ account, isConnected: !!account }),
-      setUser: (user) => set({ 
-        user, 
-        role: user?.role || null,
-        isVerified: user?.isVerified || false 
+      setUser: (user) => set({
+        user,
+        role: normalizeRoleId(user?.role),
+        isVerified: user?.isVerified || false
       }),
       logout: () => {
         // Set flag to prevent auto-reconnect

@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiHome, FiFileText, FiCheckCircle, FiUsers, FiPackage,
   FiBox, FiPieChart, FiSettings, FiBell, FiMenu, FiX,
-  FiLogOut, FiGlobe, FiChevronDown, FiUser, FiMoon, FiSun, FiActivity, FiLayers, FiAward
+  FiLogOut, FiGlobe, FiChevronDown, FiUser, FiMoon, FiSun, FiActivity, FiLayers, FiAward, FiShield
 } from 'react-icons/fi'
 import { useStore } from '../store/useStore'
-import { shortenAddress, getRoleName, getRoleColorClass, hasFeatureAccess } from '../utils/helpers'
+import { shortenAddress, getRoleName, getRoleColorClass, normalizeRoleId } from '../utils/helpers'
 import { disableDevMode } from '../utils/devMode'
 import { useBlockchain } from '../hooks/useBlockchain'
+import { canAccessPage } from '../utils/permissions'
 
 const Layout = ({ children }) => {
   const { t } = useTranslation()
@@ -27,6 +28,7 @@ const Layout = ({ children }) => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const { connected, networkName, isDevMode: devMode, refresh } = useBlockchain()
+  const currentRole = normalizeRoleId(role ?? user?.role)
 
   // Re-check blockchain when navigating (e.g. after enabling Dev Mode in Settings)
   useEffect(() => {
@@ -51,16 +53,17 @@ const Layout = ({ children }) => {
   const navItems = [
     { path: '/', icon: FiHome, label: t('nav.dashboard'), roles: [1, 2, 3, 4, 5, 6], accessControl: null },
     { path: '/prescription/create', icon: FiFileText, label: t('nav.createPrescription'), roles: [1, 2], accessControl: 'canCreatePrescription' },
-    { path: '/templates', icon: FiLayers, label: 'Templates', roles: [1, 2], accessControl: 'canCreatePrescription' },
-    { path: '/pharmacy', icon: FiCheckCircle, label: t('nav.verification'), roles: [1, 2, 3, 5], accessControl: 'canDispense' },
-    { path: '/patient-history', icon: FiUser, label: 'Patient History (NID)', roles: [1, 2, 3, 5], accessControl: null },
+    { path: '/templates', icon: FiLayers, label: 'Templates', roles: [1, 2], accessControl: 'canUseTemplates' },
+    { path: '/pharmacy', icon: FiCheckCircle, label: t('nav.verification'), roles: [1, 2, 3, 5], accessControl: 'canAccessPharmacyVerification' },
+    { path: '/patient-history', icon: FiUser, label: 'Patient History (NID)', roles: [1, 2, 3], accessControl: 'canViewPatientHistory' },
     { path: '/patient', icon: FiUser, label: t('nav.patients'), roles: [1, 2, 5], accessControl: null },
-    { path: '/medicines', icon: FiPackage, label: t('nav.medicines'), roles: [1, 2, 3], accessControl: null },
+    { path: '/medicines', icon: FiPackage, label: t('nav.medicines'), roles: [1, 2, 3], accessControl: 'canViewMedicines' },
     { path: '/batches', icon: FiBox, label: t('nav.batches'), roles: [1, 4, 6], accessControl: 'canCreateBatch' },
     { path: '/users', icon: FiUsers, label: t('nav.users'), roles: [1], accessControl: 'canManageUsers' }, // Super Admin only
     { path: '/analytics', icon: FiPieChart, label: t('nav.analytics'), roles: [1, 6], accessControl: 'canViewAnalytics' },
+    { path: '/regulator', icon: FiShield, label: 'Regulator Center', roles: [1, 6], accessControl: 'canViewAnalytics' },
     { path: '/leaderboard', icon: FiAward, label: 'Leaderboard', roles: [1, 2, 3, 4, 5, 6], accessControl: null },
-    { path: '/activity', icon: FiActivity, label: 'Activity Log', roles: [1, 2, 3, 4, 5, 6], accessControl: null },
+    { path: '/activity', icon: FiActivity, label: 'Activity Log', roles: [1, 6], accessControl: 'canViewActivityLog' },
     { path: '/settings', icon: FiSettings, label: t('nav.settings'), roles: [1, 2, 3, 4, 5, 6], accessControl: null },
   ]
 
@@ -101,43 +104,47 @@ const Layout = ({ children }) => {
             <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path
-                const hasRoleAccess = !role || item.roles.includes(role) || role === 1
-                const hasFeature = !item.accessControl || !account || hasFeatureAccess(account, item.accessControl)
-                const isDisabled = item.disabled || !hasRoleAccess || !hasFeature
 
-                if (isDisabled) {
-                  return (
-                    <div
-                      key={item.path}
-                      className="nav-item opacity-40 cursor-not-allowed"
-                      title={item.disabled ? 'Coming Soon' : 'No access for this account'}
-                    >
-                      <item.icon size={20} />
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="ml-auto px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                  )
-                }
+                // Check if user can access this page
+                const canAccess = canAccessPage(currentRole, item.path)
 
+                // Always render the nav item, but with disabled styling if no access
                 return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`nav-item ${isActive ? 'active' : ''}`}
-                  >
-                    <item.icon size={20} />
-                    <span>{item.label}</span>
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeTab"
-                        className="absolute left-0 w-1 h-8 bg-primary-500 rounded-r-full"
-                      />
+                  <div key={item.path} className="relative group">
+                    {canAccess ? (
+                      // Has access - render as clickable link
+                      <Link
+                        to={item.path}
+                        className={`nav-item ${isActive ? 'active' : ''}`}
+                      >
+                        <item.icon size={20} />
+                        <span>{item.label}</span>
+                        {item.badge && (
+                          <span className="ml-auto px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded-full">
+                            {item.badge}
+                          </span>
+                        )}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeTab"
+                            className="absolute left-0 w-1 h-8 bg-primary-500 rounded-r-full"
+                          />
+                        )}
+                      </Link>
+                    ) : (
+                      // No access - render as disabled item with tooltip
+                      <div
+                        className="nav-item opacity-40 cursor-not-allowed"
+                        title={`Access restricted: ${getRoleName(currentRole)} role cannot access ${item.label}`}
+                      >
+                        <item.icon size={20} />
+                        <span>{item.label}</span>
+                        <span className="ml-auto px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded-full">
+                          Restricted
+                        </span>
+                      </div>
                     )}
-                  </Link>
+                  </div>
                 )
               })}
             </nav>
@@ -156,8 +163,8 @@ const Layout = ({ children }) => {
                     {shortenAddress(account)}
                   </p>
                 </div>
-                <span className={`badge ${getRoleColorClass(role)} text-xs`}>
-                  {getRoleName(role)}
+                <span className={`badge ${getRoleColorClass(currentRole)} text-xs`}>
+                  {getRoleName(currentRole)}
                 </span>
               </div>
             </div>

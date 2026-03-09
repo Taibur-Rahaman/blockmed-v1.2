@@ -10,6 +10,7 @@ import { initDevMode } from './utils/devMode'
 
 // Layout & Auth
 import Layout from './components/Layout'
+import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 
 // Pages
@@ -26,6 +27,7 @@ import Settings from './pages/Settings'
 import ActivityLog from './pages/ActivityLog'
 import PrescriptionTemplates from './pages/PrescriptionTemplates'
 import Leaderboard from './pages/Leaderboard'
+import RegulatorCenter from './pages/RegulatorCenter'
 
 function App() {
   console.log('🎨 App component rendering...')
@@ -242,17 +244,18 @@ function App() {
 
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/prescription/create" element={<CreatePrescription />} />
-                <Route path="/pharmacy" element={<PharmacyVerification />} />
-                <Route path="/patient-history" element={<PatientHistory />} />
-                <Route path="/patient" element={<PatientPortal />} />
-                <Route path="/medicines" element={<MedicineManagement />} />
-                <Route path="/batches" element={<BatchManagement />} />
-                <Route path="/users" element={<UserManagement />} />
+                <Route path="/prescription/create" element={<ProtectedRoute requiredPage="/prescription/create"><CreatePrescription /></ProtectedRoute>} />
+                <Route path="/pharmacy" element={<ProtectedRoute requiredPage="/pharmacy"><PharmacyVerification /></ProtectedRoute>} />
+                <Route path="/patient-history" element={<ProtectedRoute requiredPage="/patient-history"><PatientHistory /></ProtectedRoute>} />
+                <Route path="/patient" element={<ProtectedRoute requiredPage="/patient"><PatientPortal /></ProtectedRoute>} />
+                <Route path="/medicines" element={<ProtectedRoute requiredPage="/medicines"><MedicineManagement /></ProtectedRoute>} />
+                <Route path="/batches" element={<ProtectedRoute requiredPage="/batches"><BatchManagement /></ProtectedRoute>} />
+                <Route path="/users" element={<ProtectedRoute requiredPage="/users"><UserManagement /></ProtectedRoute>} />
                 {/* Analytics and Settings enabled */}
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/activity" element={<ActivityLog />} />
-                <Route path="/templates" element={<PrescriptionTemplates />} />
+                <Route path="/analytics" element={<ProtectedRoute requiredPage="/analytics"><Analytics /></ProtectedRoute>} />
+                <Route path="/regulator" element={<ProtectedRoute requiredPage="/regulator"><RegulatorCenter /></ProtectedRoute>} />
+                <Route path="/activity" element={<ProtectedRoute requiredPage="/activity"><ActivityLog /></ProtectedRoute>} />
+                <Route path="/templates" element={<ProtectedRoute requiredPage="/templates"><PrescriptionTemplates /></ProtectedRoute>} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

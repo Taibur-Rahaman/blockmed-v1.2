@@ -14,9 +14,9 @@ import { findDemoBatchByNumber } from '../data/demoBatches'
 import { 
   formatTimestamp, shortenAddress, isExpired, daysUntilExpiry,
   getPrescriptionStatus, getBatchStatus, generatePatientHash,
-  hasFeatureAccess, isUserRestricted
+  isUserRestricted, normalizeRoleId
 } from '../utils/helpers'
-import { ROLES } from '../utils/config'
+import { ROLES, canAccessFeature } from '../utils/permissions'
 import { getReadContract, getWriteContract, isBlockchainReady, getFriendlyErrorMessage, getContractAddress, getProvider } from '../utils/contractHelper'
 import { isDevMode } from '../utils/devMode'
 import { BlockchainInfo, BlockchainBadge, BlockchainLoadingSteps, BlockchainVerificationProof } from '../components/BlockchainInfo'
@@ -25,7 +25,10 @@ const PharmacyVerification = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { account, language, role, incrementDemoBatchesVersion, demoPrescriptions, markDemoPrescriptionDispensed, addMedicineCheck } = useStore()
+  const { account, language, role, user, incrementDemoBatchesVersion, demoPrescriptions, markDemoPrescriptionDispensed, addMedicineCheck } = useStore()
+  const currentRole = normalizeRoleId(role ?? user?.role)
+  const canUseVerificationPortal = canAccessFeature(currentRole, 'canAccessPharmacyVerification')
+  const canDispenseOnChain = canAccessFeature(currentRole, 'canDispense')
 
   // Check access control
   useEffect(() => {
@@ -35,12 +38,12 @@ const PharmacyVerification = () => {
         navigate('/')
         return
       }
-      if (!hasFeatureAccess(account, 'canDispense')) {
-        toast.error('You do not have permission to dispense prescriptions.')
+      if (!canUseVerificationPortal) {
+        toast.error('You do not have permission to access the verification portal.')
         navigate('/')
       }
     }
-  }, [account, navigate])
+  }, [account, canUseVerificationPortal, navigate])
   
   const [activeTab, setActiveTab] = useState('prescription')
   const [prescriptionId, setPrescriptionId] = useState('')
@@ -631,7 +634,6 @@ const PharmacyVerification = () => {
     }
 
     // On-chain: require Pharmacist or Admin
-    const canDispenseOnChain = role === ROLES.PHARMACIST || role === ROLES.ADMIN
     if (!canDispenseOnChain) {
       toast.error(language === 'bn' ? 'শুধুমাত্র ফার্মাসিস্ট বা অ্যাডমিন ক্রয় নিশ্চিত করতে পারবেন' : 'Only pharmacist or admin can confirm purchase on blockchain')
       return
@@ -1257,7 +1259,7 @@ const PharmacyVerification = () => {
                   {/* Confirm Purchase - on-chain: Pharmacist or Admin; demo: anyone (simulated locally) */}
                   {!batch.notFound && !batch.isRecalled && !batch.isFlagged && !isExpired(batch.expiresAt) &&
                    (batch.totalUnits ?? 0) > 0 && (batch.totalUnits - (batch.dispensedUnits ?? 0)) > 0 &&
-                   (batch.isDemo || role === ROLES.PHARMACIST || role === ROLES.ADMIN) && (
+                   (batch.isDemo || canDispenseOnChain) && (
                     <div className="p-4 rounded-xl bg-primary-500/10 border border-primary-500/30">
                       <p className="text-sm font-medium text-primary-300 mb-3">
                         {language === 'bn' ? 'ক্রেতা কত ইউনিট কিনেছে?' : 'How many units did the customer buy?'}
