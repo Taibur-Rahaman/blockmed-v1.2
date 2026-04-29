@@ -1,0 +1,3 @@
+[submodule "external/cursor-cookbook"]
+	path = external/cursor-cookbook
+	url = https://github.com/cursor/cookbook

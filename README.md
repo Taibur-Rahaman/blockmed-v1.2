@@ -33,6 +33,7 @@ Blockchain-based prescription management and anti-fake medicine tracking with **
 | **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and fixes |
 | **[docs/PRIVACY_ONCHAIN.md](./docs/PRIVACY_ONCHAIN.md)** | Privacy and on-chain data |
 | **[docs/METAMASK_LOCALHOST_FIX.md](./docs/METAMASK_LOCALHOST_FIX.md)** | MetaMask localhost tips |
+| **[docs/CURSOR_COOKBOOK_SETUP.md](./docs/CURSOR_COOKBOOK_SETUP.md)** | Cursor cookbook + SDK quickstart setup |
 
 ---
 

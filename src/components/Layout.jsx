@@ -305,10 +305,18 @@ const Layout = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 p-2 rounded-xl hover:bg-white/10 transition-colors"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-sm font-semibold shadow-neon">
                   {user?.name?.[0] || account?.[2]?.toUpperCase() || '?'}
+                </div>
+                <div className="hidden sm:flex flex-col items-start">
+                  <span className="text-xs font-medium text-white leading-tight">
+                    {user?.name || 'Unknown'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 leading-tight">
+                    {getRoleName(currentRole)}
+                  </span>
                 </div>
                 <FiChevronDown size={16} className="text-gray-400" />
               </button>
@@ -321,22 +329,50 @@ const Layout = ({ children }) => {
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-56 glass rounded-xl border border-white/10 shadow-2xl overflow-hidden"
                   >
-                    <div className="p-4 border-b border-white/10">
-                      <p className="font-medium text-white">{user?.name || 'Unknown'}</p>
-                      <p className="text-xs text-gray-400 mt-1 truncate">{account}</p>
+                    <div className="p-4 border-b border-white/10 bg-gradient-to-br from-dark-800 to-dark-900">
+                      <p className="text-xs text-gray-400 mb-1">
+                        {getRoleName(currentRole)}{' '}
+                        {devMode && <span className="text-emerald-400 font-medium">• Dev Account</span>}
+                      </p>
+                      <p className="font-semibold text-white truncate">
+                        {user?.name || 'Unknown'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1 truncate">
+                        {account ? shortenAddress(account) : 'Not connected'}
+                      </p>
                     </div>
-                    <div className="p-2">
+                    <div className="p-3 space-y-2">
+                      {(currentRole === 1 || currentRole === 2) && (
+                        <Link
+                          to="/prescription/create"
+                          className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-emerald-500/90 hover:bg-emerald-500 text-white text-sm font-medium shadow-lg shadow-emerald-500/30"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <FiFileText size={16} />
+                            <span>{t('nav.createPrescription')}</span>
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wide opacity-80">
+                            Primary
+                          </span>
+                        </Link>
+                      )}
                       <Link
                         to="/settings"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 text-gray-300"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 text-gray-300 text-sm"
                         onClick={() => setShowUserMenu(false)}
                       >
                         <FiSettings size={16} />
-                        <span>{t('nav.settings')}</span>
+                        <div className="flex flex-col">
+                          <span>{t('nav.settings')}</span>
+                          <span className="text-[11px] text-gray-500">
+                            Network, Dev Mode, language
+                          </span>
+                        </div>
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/20 text-red-400"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/15 text-red-400 text-sm border border-red-500/40"
                       >
                         <FiLogOut size={16} />
                         <span>{t('auth.disconnect')}</span>
