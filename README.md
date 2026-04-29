@@ -19,33 +19,42 @@ Blockchain-based prescription management and anti-fake medicine tracking with **
 
 | Document | Purpose |
 |----------|---------|
-| **[START_HERE.md](./START_HERE.md)** | First-time setup and navigation |
+| **[docs/START_HERE.md](./docs/START_HERE.md)** | First-time setup and navigation |
 | **[QUICK_START.md](./QUICK_START.md)** | Fast setup (Dev Mode or wallet) |
 | **[docs/BLOCKCHAIN_HOW_IT_WORKS.md](./docs/BLOCKCHAIN_HOW_IT_WORKS.md)** | How blockchain works (contract, connection, indexer, diagrams) |
-| **[BLOCKMED_V2_GUIDE.md](./BLOCKMED_V2_GUIDE.md)** | System guide by role and page |
-| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Deploy contract and config |
-| **[WALLET_SETUP.md](./WALLET_SETUP.md)** | Dev Mode and MetaMask setup |
-| **[BLOCKCHAIN_DATA_PERSISTENCE.md](./BLOCKCHAIN_DATA_PERSISTENCE.md)** | Where data lives and how to find it |
-| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | System architecture |
-| **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** | Project overview |
-| **[SUPER_ADMIN_PORTAL.md](./SUPER_ADMIN_PORTAL.md)** | Super Admin features |
-| **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** | Testing guide |
-| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and fixes |
+| **[docs/BLOCKMED_V2_GUIDE.md](./docs/BLOCKMED_V2_GUIDE.md)** | System guide by role and page |
+| **[docs/DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md)** | Deploy contract and config |
+| **[docs/WALLET_SETUP.md](./docs/WALLET_SETUP.md)** | Dev Mode and MetaMask setup |
+| **[docs/BLOCKCHAIN_DATA_PERSISTENCE.md](./docs/BLOCKCHAIN_DATA_PERSISTENCE.md)** | Where data lives and how to find it |
+| **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | System architecture |
+| **[docs/PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md)** | Project overview |
+| **[docs/SUPER_ADMIN_PORTAL.md](./docs/SUPER_ADMIN_PORTAL.md)** | Super Admin features |
+| **[docs/TESTING_CHECKLIST.md](./docs/TESTING_CHECKLIST.md)** | Testing guide |
+| **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** | Common issues and fixes |
 | **[docs/PRIVACY_ONCHAIN.md](./docs/PRIVACY_ONCHAIN.md)** | Privacy and on-chain data |
 | **[docs/METAMASK_LOCALHOST_FIX.md](./docs/METAMASK_LOCALHOST_FIX.md)** | MetaMask localhost tips |
 | **[docs/CURSOR_COOKBOOK_SETUP.md](./docs/CURSOR_COOKBOOK_SETUP.md)** | Cursor cookbook + SDK quickstart setup |
 
 ---
 
-## ⚡ Quick Setup
+## ⚡ Quick Setup (Latest GitHub Version)
 
-### 1. Install
+### 1. Clone and sync
+
+```bash
+git clone https://github.com/Taibur-Rahaman/blockmed-v1.2.git
+cd blockmed-v1.2
+git checkout main
+git pull origin main
+```
+
+### 2. Install
 
 ```bash
 npm install
 ```
 
-### 2. Start blockchain and deploy
+### 3. Start blockchain and deploy
 
 **Option A – One command (blockchain + deploy + app):**
 
@@ -64,11 +73,12 @@ npm run deploy:check
 npm run dev
 ```
 
-### 3. Use the app
+### 4. Use the app
 
 - Open **http://localhost:3000**
 - Click **🔧 Use Dev Mode** → choose account (e.g. Admin #0, Doctor #1)
 - Or connect **MetaMask** (Hardhat Local, Chain ID 31337)
+- If old UI appears, do hard refresh: **Cmd+Shift+R** (Mac) / **Ctrl+Shift+R** (Windows)
 
 After a **new deploy**, restart the dev server and hard-refresh the browser so `VITE_CONTRACT_ADDRESS` is picked up.
 
