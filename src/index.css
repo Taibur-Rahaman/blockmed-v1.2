@@ -6,6 +6,27 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Keep all native dropdowns consistent with dark UI */
+  select {
+    background-color: #0f172a;
+    color: #e2e8f0;
+  }
+
+  select option,
+  select optgroup {
+    background-color: #0f172a;
+    color: #e2e8f0;
+  }
+
+  select option:checked,
+  select option:hover,
+  select option:focus {
+    background: #1e293b;
+    color: #ffffff;
+  }
+}
+
 /* Light Theme Variables */
 :root {
   --bg-primary: #ffffff;

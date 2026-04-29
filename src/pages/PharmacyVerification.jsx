@@ -63,6 +63,7 @@ const PharmacyVerification = () => {
   const [expectedPatientHash, setExpectedPatientHash] = useState(null)
   const [prescriptionValidity, setPrescriptionValidity] = useState(null)
   const [qrWarning, setQrWarning] = useState(null)
+  const [scannerError, setScannerError] = useState(null)
 
   // Check blockchain connection
   useEffect(() => {
@@ -81,6 +82,7 @@ const PharmacyVerification = () => {
   // Initialize QR Scanner after DOM has qr-reader (so camera works)
   useEffect(() => {
     if (!showScanner) {
+      setScannerError(null)
       if (scannerRef.current) {
         scannerRef.current.clear().catch(() => {})
         scannerRef.current = null
@@ -89,11 +91,20 @@ const PharmacyVerification = () => {
     }
     const timer = setTimeout(() => {
       if (scannerRef.current || !document.getElementById('qr-reader')) return
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setScannerError(
+          language === 'bn'
+            ? 'ক্যামেরা API পাওয়া যায়নি। HTTPS বা localhost ব্যবহার করুন।'
+            : 'Camera API unavailable. Use HTTPS or localhost.'
+        )
+        return
+      }
       const scanner = new Html5QrcodeScanner('qr-reader', {
         fps: 10,
         qrbox: { width: 250, height: 250 },
       })
-      scanner.render(
+      try {
+        scanner.render(
         async (decodedText) => {
           try {
             const data = JSON.parse(decodedText)
@@ -157,16 +168,54 @@ const PharmacyVerification = () => {
 
             scanner.clear().catch(() => {})
             setShowScanner(false)
+            setScannerError(null)
             toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
           } catch {
-            setPrescriptionId(String(decodedText).trim())
+            if (activeTab === 'batch') {
+              setBatchNumber(String(decodedText).trim())
+            } else {
+              setPrescriptionId(String(decodedText).trim())
+            }
             scanner.clear().catch(() => {})
             setShowScanner(false)
+            setScannerError(null)
             toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
           }
         },
-        () => {}
+        (scanError) => {
+          const message = String(scanError || '')
+          // Ignore frequent non-QR frames; only show actionable scanner failures.
+          if (
+            message.includes('NotFoundException') ||
+            message.includes('No MultiFormat Readers') ||
+            message.includes('No barcode or QR code detected')
+          ) {
+            return
+          }
+          if (
+            message.includes('NotAllowedError') ||
+            message.includes('Permission denied') ||
+            message.includes('Permission') ||
+            message.includes('NotReadableError') ||
+            message.includes('OverconstrainedError') ||
+            message.includes('camera')
+          ) {
+            setScannerError(
+              language === 'bn'
+                ? 'ক্যামেরা অ্যাক্সেস ব্যর্থ। ব্রাউজার ক্যামেরা অনুমতি দিন, অন্য অ্যাপ ক্যামেরা ব্যবহার করছে কিনা দেখুন, এবং HTTPS/localhost ব্যবহার করুন।'
+                : 'Camera access failed. Allow camera permission, close other apps using camera, and use HTTPS/localhost.'
+            )
+          }
+        }
       )
+      } catch (err) {
+        console.error('Scanner init error:', err)
+        setScannerError(
+          language === 'bn'
+            ? 'QR স্ক্যানার শুরু করা যায়নি। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।'
+            : 'Failed to start QR scanner. Refresh the page and try again.'
+        )
+      }
       scannerRef.current = scanner
     }, 300)
     return () => {
@@ -176,7 +225,7 @@ const PharmacyVerification = () => {
         scannerRef.current = null
       }
     }
-  }, [showScanner, language])
+  }, [showScanner, language, activeTab])
 
   // Load patient history by patientHash
   const loadPatientHistory = async (patientHash) => {
@@ -355,7 +404,15 @@ const PharmacyVerification = () => {
       }
     } catch (error) {
       console.error('Error loading prescription:', error)
-      toast.error(language === 'bn' ? 'প্রেসক্রিপশন পাওয়া যায়নি। আইডি ও নেটওয়ার্ক যাচাই করুন।' : 'Prescription not found. Check ID and network.')
+      if (qrWarning) {
+        toast.error(
+          language === 'bn'
+            ? 'এই QR টি আগের/ভিন্ন কনট্র্যাক্টের হতে পারে। নতুন ডিপ্লয়ের পরে নতুন QR ব্যবহার করুন।'
+            : 'This QR may belong to an older/different contract. Use a newly generated QR after redeploy.'
+        )
+      } else {
+        toast.error(language === 'bn' ? 'প্রেসক্রিপশন পাওয়া যায়নি। আইডি ও নেটওয়ার্ক যাচাই করুন।' : 'Prescription not found. Check ID and network.')
+      }
     } finally {
       setLoading(false)
     }
@@ -757,6 +814,11 @@ const PharmacyVerification = () => {
               Cancel
             </button>
           </div>
+          {scannerError && (
+            <div className="mb-3 p-3 rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-sm">
+              {scannerError}
+            </div>
+          )}
           <div id="qr-reader" className="rounded-xl overflow-hidden" />
         </motion.div>
       )}
