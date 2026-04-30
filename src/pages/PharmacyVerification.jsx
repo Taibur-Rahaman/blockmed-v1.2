@@ -112,22 +112,31 @@ const PharmacyVerification = () => {
             const currentContract = getContractAddress()?.toLowerCase()
             let targetTab = 'prescription'
             let warningMessage = null
+            let scannedPrescriptionId = null
+            let scannedPatientHash = null
+            let scannedBatchNumber = null
 
             if (data.type === 'prescription' && data.prescriptionId != null) {
-              setPrescriptionId(String(data.prescriptionId).trim())
-              setExpectedPatientHash(data.patientHash || null)
+              scannedPrescriptionId = String(data.prescriptionId).trim()
+              scannedPatientHash = data.patientHash || null
+              setPrescriptionId(scannedPrescriptionId)
+              setExpectedPatientHash(scannedPatientHash)
               targetTab = 'prescription'
             } else if (data.type === 'batch' && (data.batchNumber || data.batchId != null)) {
-              setBatchNumber(String(data.batchNumber || data.batchId).trim())
+              scannedBatchNumber = String(data.batchNumber || data.batchId).trim()
+              setBatchNumber(scannedBatchNumber)
               targetTab = 'batch'
             } else if (data.prescriptionId != null) {
               // Legacy prescription QR
-              setPrescriptionId(String(data.prescriptionId).trim())
-              setExpectedPatientHash(data.patientHash || null)
+              scannedPrescriptionId = String(data.prescriptionId).trim()
+              scannedPatientHash = data.patientHash || null
+              setPrescriptionId(scannedPrescriptionId)
+              setExpectedPatientHash(scannedPatientHash)
               targetTab = 'prescription'
             } else if (data.batchNumber) {
               // Legacy batch QR
-              setBatchNumber(String(data.batchNumber).trim())
+              scannedBatchNumber = String(data.batchNumber).trim()
+              setBatchNumber(scannedBatchNumber)
               targetTab = 'batch'
             }
 
@@ -169,17 +178,36 @@ const PharmacyVerification = () => {
             scanner.clear().catch(() => {})
             setShowScanner(false)
             setScannerError(null)
-            toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
-          } catch {
-            if (activeTab === 'batch') {
-              setBatchNumber(String(decodedText).trim())
+
+            if (scannedPrescriptionId) {
+              await loadPrescription(scannedPrescriptionId, {
+                expectedPatientHash: scannedPatientHash,
+              })
+            } else if (scannedBatchNumber) {
+              await loadBatch(scannedBatchNumber)
+              toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
             } else {
-              setPrescriptionId(String(decodedText).trim())
+              toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
+            }
+          } catch {
+            const raw = String(decodedText).trim()
+            if (activeTab === 'batch') {
+              setBatchNumber(raw)
+              await loadBatch(raw)
+            } else {
+              setPrescriptionId(raw)
+              if (/^\d+$/.test(raw)) {
+                await loadPrescription(raw)
+              }
             }
             scanner.clear().catch(() => {})
             setShowScanner(false)
             setScannerError(null)
-            toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
+            if (activeTab === 'batch' || /^\d+$/.test(raw)) {
+              toast.success(language === 'bn' ? 'QR স্ক্যান সফল!' : 'QR Code scanned!')
+            } else {
+              toast.success(language === 'bn' ? 'QR স্ক্যান সফল! যাচাই বোতামে টিপুন।' : 'QR scanned! Press verify to load.')
+            }
           }
         },
         (scanError) => {
@@ -267,9 +295,16 @@ const PharmacyVerification = () => {
     }
   }
 
-  // Load prescription
-  const loadPrescription = async () => {
-    const id = String(prescriptionId || '').trim()
+  // Load prescription (optional overrideId / expectedPatientHash for QR scans before state flush)
+  const loadPrescription = async (overrideId, options = {}) => {
+    const id = String(
+      overrideId !== undefined && overrideId !== null && overrideId !== ''
+        ? overrideId
+        : prescriptionId || ''
+    ).trim()
+    const hashForPatientCheck =
+      options.expectedPatientHash !== undefined ? options.expectedPatientHash : expectedPatientHash
+
     if (!id) {
       toast.error(language === 'bn' ? 'প্রেসক্রিপশন আইডি লিখুন' : 'Enter Prescription ID')
       return
@@ -328,8 +363,8 @@ const PharmacyVerification = () => {
         toast.success(language === 'bn' ? 'ডেমো প্রেসক্রিপশন পাওয়া গেছে' : 'Demo prescription found')
 
         // Cross-check scanned patient hash if available
-        if (expectedPatientHash && demo.patientHash &&
-          expectedPatientHash.toLowerCase() !== String(demo.patientHash).toLowerCase()) {
+        if (hashForPatientCheck && demo.patientHash &&
+          hashForPatientCheck.toLowerCase() !== String(demo.patientHash).toLowerCase()) {
           toast.error(
             language === 'bn'
               ? 'QR এর রোগীর আইডি এই প্রেসক্রিপশনের সাথে মিলছে না। এটি পরিবর্তিত হতে পারে।'
@@ -389,8 +424,8 @@ const PharmacyVerification = () => {
       }
 
       // Cross-check scanned patient hash if available
-      if (expectedPatientHash && result.patientHash &&
-        expectedPatientHash.toLowerCase() !== String(result.patientHash).toLowerCase()) {
+      if (hashForPatientCheck && result.patientHash &&
+        hashForPatientCheck.toLowerCase() !== String(result.patientHash).toLowerCase()) {
         toast.error(
           language === 'bn'
             ? 'QR এর রোগীর আইডি এই প্রেসক্রিপশনের সাথে মিলছে না। এটি পরিবর্তিত হতে পারে।'
@@ -471,9 +506,13 @@ const PharmacyVerification = () => {
     }
   }
 
-  // Load batch
-  const loadBatch = async () => {
-    const num = String(batchNumber || '').trim()
+  // Load batch (optional override when scanning before batchNumber state updates)
+  const loadBatch = async (overrideBatch) => {
+    const num = String(
+      overrideBatch !== undefined && overrideBatch !== null && overrideBatch !== ''
+        ? overrideBatch
+        : batchNumber || ''
+    ).trim()
     if (!num) {
       toast.error(language === 'bn' ? 'ব্যাচ নম্বর লিখুন' : 'Enter batch number')
       return
@@ -845,7 +884,7 @@ const PharmacyVerification = () => {
               {t('pharmacy.scanQR')}
             </button>
             <button
-              onClick={loadPrescription}
+              onClick={() => loadPrescription()}
               disabled={loading || !prescriptionId}
               className="btn-primary"
             >
@@ -1174,7 +1213,7 @@ const PharmacyVerification = () => {
               {t('pharmacy.scanQR')}
             </button>
             <button
-              onClick={loadBatch}
+              onClick={() => loadBatch()}
               disabled={loading || !String(batchNumber || '').trim()}
               className="btn-primary"
               type="button"
