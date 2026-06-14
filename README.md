@@ -146,3 +146,7 @@ See **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** and **[DEPLOYMENT_GUIDE.md](.
 ---
 
 **Built with React, Vite, TailwindCSS, ethers.js, Solidity, Hardhat**
+
+## Author
+
+**Md Taibur Rahaman** — [GitHub](https://github.com/Taibur-Rahaman)
